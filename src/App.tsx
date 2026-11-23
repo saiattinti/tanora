@@ -20,6 +20,7 @@ import type {
   NutritionGoals,
   SavedEntry,
 } from './lib/nutritionStorage'
+import { readGuestData, saveGuestData } from './lib/guestStorage'
 import './App.css'
 
 type Food = USDAFood
@@ -27,7 +28,7 @@ type Entry = SavedEntry
 type Macros = NutritionGoals
 
 type Props = {
-  userId: string
+  userId: string | null
   userEmail: string
   onSignOut: () => Promise<void>
 }
@@ -202,6 +203,7 @@ function isGoals(value: unknown): value is Macros {
 }
 
 function App({ userId, userEmail, onSignOut }: Props) {
+  const guest = userId === null
   const [goals, setGoals] = useState<Macros>(defaults)
   const [hasCloudGoals, setHasCloudGoals] = useState(false)
   const [entries, setEntries] = useState<Entry[]>([])
@@ -270,17 +272,17 @@ function App({ userId, userEmail, onSignOut }: Props) {
     localStorage.getItem(importMarker) === 'true'
 
   const refresh = useCallback(async () => {
-    const data = await loadNutritionData(userId)
+    const data = guest ? readGuestData() : await loadNutritionData(userId!)
     setGoals(data.goals ?? defaults)
     setHasCloudGoals(data.goals !== null)
     setEntries(data.entries)
     setFavorites(data.favorites)
-  }, [userId])
+  }, [userId, guest])
 
   useEffect(() => {
     let active = true
 
-    void loadNutritionData(userId)
+    void (guest ? Promise.resolve(readGuestData()) : loadNutritionData(userId!))
       .then(data => {
         if (!active) return
 
@@ -302,7 +304,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
     return () => {
       active = false
     }
-  }, [userId])
+  }, [userId, guest])
 
   async function performCloudAction(
     action: () => Promise<void>,
@@ -338,12 +340,12 @@ function App({ userId, userEmail, onSignOut }: Props) {
         await refresh()
         setReady(true)
       },
-      'Your cloud data is up to date.'
+      guest ? 'Your guest data is up to date.' : 'Your cloud data is up to date.'
     )
   }
 
   async function importOldData() {
-    if (importedAlready || !hasOldData) return
+    if (guest || importedAlready || !hasOldData) return
 
     const confirmed = window.confirm(
       `Import browser data into ${userEmail}?\n\n` +
@@ -357,7 +359,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
     if (!confirmed) return
 
     await performCloudAction(async () => {
-      const cloud = await loadNutritionData(userId)
+      const cloud = await loadNutritionData(userId!)
       const existingIds = new Set(cloud.entries.map(e => e.id))
       const uuidPattern =
         /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -375,7 +377,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
           unit: entry.unit ?? 'g',
         }
 
-        await saveCloudEntry(userId, normalized)
+        await saveCloudEntry(userId!, normalized)
       }
 
       const cloudFavorites = new Set(
@@ -384,12 +386,12 @@ function App({ userId, userEmail, onSignOut }: Props) {
 
       for (const food of localFavorites) {
         if (!cloudFavorites.has(food.id)) {
-          await saveCloudFavorite(userId, food)
+          await saveCloudFavorite(userId!, food)
         }
       }
 
       if (localGoals && !cloud.goals) {
-        await saveCloudGoals(userId, localGoals)
+        await saveCloudGoals(userId!, localGoals)
       }
 
       await refresh()
@@ -524,7 +526,11 @@ function App({ userId, userEmail, onSignOut }: Props) {
 
   async function saveGoals(updated: Macros) {
     const success = await performCloudAction(async () => {
-      await saveCloudGoals(userId, updated)
+      if (guest) {
+        saveGuestData({ goals: updated, entries, favorites })
+      } else {
+        await saveCloudGoals(userId!, updated)
+      }
       setGoals(updated)
       setHasCloudGoals(true)
     }, 'Your nutrition goals were saved.')
@@ -534,7 +540,14 @@ function App({ userId, userEmail, onSignOut }: Props) {
 
   async function saveEntry(entry: Entry) {
     const success = await performCloudAction(async () => {
-      await saveCloudEntry(userId, entry)
+      if (guest) {
+        const next = entries.some(item => item.id === entry.id)
+          ? entries.map(item => item.id === entry.id ? entry : item)
+          : [...entries, entry]
+        saveGuestData({ goals, entries: next, favorites })
+      } else {
+        await saveCloudEntry(userId!, entry)
+      }
       setEntries(previous =>
         previous.some(item => item.id === entry.id)
           ? previous.map(item =>
@@ -542,7 +555,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
             )
           : [...previous, entry]
       )
-    }, 'Food saved to your account.')
+    }, guest ? 'Food saved on this device.' : 'Food saved to your account.')
 
     if (success) closeFood()
   }
@@ -629,7 +642,11 @@ function App({ userId, userEmail, onSignOut }: Props) {
 
   async function removeEntry(entryId: string) {
     await performCloudAction(async () => {
-      await deleteCloudEntry(userId, entryId)
+      if (guest) {
+        saveGuestData({ goals, entries: entries.filter(item => item.id !== entryId), favorites })
+      } else {
+        await deleteCloudEntry(userId!, entryId)
+      }
       setEntries(previous =>
         previous.filter(item => item.id !== entryId)
       )
@@ -643,12 +660,20 @@ function App({ userId, userEmail, onSignOut }: Props) {
 
     await performCloudAction(async () => {
       if (exists) {
-        await deleteCloudFavorite(userId, food.id)
+        if (guest) {
+          saveGuestData({ goals, entries, favorites: favorites.filter(f => f.id !== food.id) })
+        } else {
+          await deleteCloudFavorite(userId!, food.id)
+        }
         setFavorites(previous =>
           previous.filter(f => f.id !== food.id)
         )
       } else {
-        await saveCloudFavorite(userId, food)
+        if (guest) {
+          saveGuestData({ goals, entries, favorites: uniqueFoods([...favorites, food]) })
+        } else {
+          await saveCloudFavorite(userId!, food)
+        }
         setFavorites(previous => uniqueFoods([...previous, food]))
       }
     })
@@ -718,7 +743,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
         <h1>Nutrition Tracker</h1>
         <p>
           {cloudError ||
-            'Loading your private nutrition data from Supabase...'}
+            (guest ? 'Loading guest nutrition data...' : 'Loading your private nutrition data from Supabase...')}
         </p>
         {cloudError && (
           <button onClick={() => void reload()}>
@@ -741,7 +766,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
             Track your daily calories and macros.
           </p>
           <p className="subtitle">
-            Signed in: {userEmail}
+            {guest ? 'Guest Mode · Saved on this device only' : `Signed in: ${userEmail}`}
           </p>
         </div>
 
@@ -755,7 +780,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
             disabled={busy}
             onClick={() => void reload()}
           >
-            Refresh
+            {guest ? 'Reload' : 'Refresh'}
           </button>
 
           <button
@@ -771,7 +796,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
             disabled={busy}
             onClick={() => void onSignOut()}
           >
-            Sign Out
+            {guest ? 'Sign In / Create Account' : 'Sign Out'}
           </button>
         </div>
       </header>
@@ -781,18 +806,18 @@ function App({ userId, userEmail, onSignOut }: Props) {
         aria-live="polite"
         style={{ marginBottom: 12 }}
       >
-        {busy && <p>Saving to your account...</p>}
+        {busy && <p>{guest ? 'Saving on this device...' : 'Saving to your account...'}</p>}
         {cloudMessage && (
           <p style={{ color: '#087f5b' }}>{cloudMessage}</p>
         )}
         {cloudError && (
           <p role="alert" style={{ color: '#b63126' }}>
-            Cloud error: {cloudError}
+            {guest ? 'Storage error' : 'Cloud error'}: {cloudError}
           </p>
         )}
       </div>
 
-      {hasOldData && !importedAlready && (
+      {!guest && hasOldData && !importedAlready && (
         <section className="card" style={{ marginBottom: 20 }}>
           <h2>Import Old Nutrition Data</h2>
           <p className="form-description">
@@ -825,7 +850,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
 
       {!hasCloudGoals && (
         <p className="form-description">
-          Your account is using starter calorie goals.
+          {guest ? 'Guest mode is using starter calorie goals.' : 'Your account is using starter calorie goals.'}
           Select Edit Goals to save your own targets.
         </p>
       )}
@@ -1308,7 +1333,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
       )}
 
       <p className="footer-note">
-        Nutrition Tracker · Account Cloud Sync
+        Nutrition Tracker · {guest ? 'Guest Mode (local only)' : 'Account Cloud Sync'}
       </p>
     </div>
   )
