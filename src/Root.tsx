@@ -7,7 +7,7 @@ import WorkoutTracker from './WorkoutTracker'
 
 export default function Root() {
   const [session, setSession] = useState<Session | null>(null)
-  const [guestMode, setGuestMode] = useState(() => window.sessionStorage.getItem('tanora-guest-session') === 'true')
+  const [guestMode, setGuestMode] = useState(() => window.sessionStorage.getItem('nutrition-guest-session') === 'true')
   const [checking, setChecking] = useState(true)
   const [section, setSection] = useState<'nutrition' | 'workouts'>('nutrition')
 
