@@ -418,6 +418,14 @@ function App({ userId, userEmail, onSignOut }: Props) {
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   )
 
+  const quickLogEntries = [...new Map(
+    entries
+      .slice()
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .filter(entry => Boolean(entry.food))
+      .map(entry => [entry.food!.id, entry] as const)
+  ).values()].slice(0, 5)
+
   const recentFoods = uniqueFoods(
     entries
       .slice()
@@ -1034,6 +1042,31 @@ function App({ userId, userEmail, onSignOut }: Props) {
           {addingFood ? 'Cancel' : '+ Add Food'}
         </button>
       </section>
+
+      {quickLogEntries.length > 0 && !addingFood && (
+        <section className="card quick-log-section">
+          <div>
+            <h2>Quick Log</h2>
+            <p className="form-description">
+              Repeat the same amount from a past entry on {displayDate}.
+            </p>
+          </div>
+          <div className="quick-log-list">
+            {quickLogEntries.map(entry => (
+              <div className="quick-log-row" key={entry.food!.id}>
+                <div>
+                  <strong>{entry.name}</strong>
+                  <small>{Math.round(entry.grams * 10) / 10} {entry.unit ?? 'g'} · {Math.round(entry.calories)} kcal</small>
+                </div>
+                <button type="button" className="add-button"
+                  disabled={busy} onClick={() => void repeatEntry(entry)}>
+                  + Log Again
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {addingFood && (
         <section className="card food-form">
