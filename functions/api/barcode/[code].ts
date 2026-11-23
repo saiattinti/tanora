@@ -88,7 +88,7 @@ export async function onRequestGet({
     const servingText = product.serving_size ?? ''
     const volumeBased =
       product.nutrition_data_per === '100ml' ||
-      /\bml\b/i.test(servingText)
+      /\d\s*ml\b|\bml\b/i.test(servingText)
     // Never substitute gram-based figures for milliliter-based ones.
     const calories = volumeBased ? n['energy-kcal_100ml'] : n['energy-kcal_100g']
     const protein = volumeBased ? n.proteins_100ml : n.proteins_100g
