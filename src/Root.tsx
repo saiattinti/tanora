@@ -6,7 +6,7 @@ import Auth from './Auth'
 
 export default function Root() {
   const [session, setSession] = useState<Session | null>(null)
-  const [guestMode, setGuestMode] = useState(() => window.sessionStorage.getItem('nutrition-guest-session') === 'true')
+  const [guestMode, setGuestMode] = useState(() => window.sessionStorage.getItem('tanora-guest-session') === 'true')
   const [checking, setChecking] = useState(true)
 
   const accountPage =
