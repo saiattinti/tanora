@@ -1,0 +1,11 @@
+.manual-food { display: grid; gap: 16px; margin-top: 16px; }
+.manual-food label { display: grid; gap: 7px; font-size: 14px; font-weight: 600; }
+.manual-food input:not([type="checkbox"]), .manual-food select { min-width: 0; width: 100%; padding: 12px; border: 1px solid #dce3e9; border-radius: 10px; background: white; color: #172b32; font-size: 16px; }
+.manual-food-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.manual-food-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.manual-food .manual-food-checkbox { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+.manual-food-checkbox input { width: 18px; height: 18px; accent-color: #16a085; }
+.manual-food-actions { display: flex; gap: 12px; align-items: center; }
+.manual-food-actions .save-food-button { flex: 1; margin: 0; }
+[data-theme='dark'] .manual-food input:not([type="checkbox"]), [data-theme='dark'] .manual-food select { background: #122126; color: #f1faf7; border-color: #42565c; }
+@media (max-width:450px) { .manual-food-actions { flex-direction: column-reverse; align-items: stretch; } }
