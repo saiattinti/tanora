@@ -1069,6 +1069,10 @@ function App({ userId, userEmail, onSignOut }: Props) {
                 )
               }}
               onCancel={() => setAddMode('ingredients')}
+              onManual={() => {
+                clearSearch()
+                setAddMode('manual')
+              }}
             />
           ) : (
             <>
