@@ -56,6 +56,8 @@ export default function BarcodeScanner({
   const [starting, setStarting] = useState(false)
   const [barcode, setBarcode] = useState('')
   const [product, setProduct] = useState<BarcodeProduct | null>(null)
+  const [productName, setProductName] = useState('')
+  const [brand, setBrand] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [mode, setMode] = useState<'amount' | 'servings'>('servings')
@@ -135,6 +137,8 @@ export default function BarcodeScanner({
       if (!mounted.current) return
 
       setProduct(data)
+      setProductName(data.name)
+      setBrand(data.brand)
       setCorrected({
         calories: data.calories === null ? '' : String(data.calories),
         protein: data.protein === null ? '' : String(data.protein),
@@ -346,9 +350,25 @@ export default function BarcodeScanner({
         <div className="barcode-product">
           <p className="barcode-source">Open Food Facts</p>
 
-          <h3>{product.name}</h3>
-
-          {product.brand && <p>{product.brand}</p>}
+          <h3>Confirm product details</h3>
+          <label>
+            Product name
+            <input
+              value={productName}
+              maxLength={150}
+              onChange={event => setProductName(event.target.value)}
+              placeholder="Product name"
+            />
+          </label>
+          <label>
+            Brand (optional)
+            <input
+              value={brand}
+              maxLength={100}
+              onChange={event => setBrand(event.target.value)}
+              placeholder="Brand"
+            />
+          </label>
 
           <p className="barcode-description">
             Nutrition per 100 {product.servingUnit}. Check each value against the package label.
@@ -461,10 +481,10 @@ export default function BarcodeScanner({
           <button
             className="barcode-add"
             type="button"
-            disabled={!nutrition}
+            disabled={!nutrition || !productName.trim()}
             onClick={() => {
-              if (nutrition && validAmount && perHundred) {
-                onAdd(product, amount, nutrition, perHundred)
+              if (nutrition && validAmount && perHundred && productName.trim()) {
+                onAdd({ ...product, name: productName.trim(), brand: brand.trim() }, amount, nutrition, perHundred)
               }
             }}
           >
