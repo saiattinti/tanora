@@ -668,3 +668,10 @@ button {
 [data-theme='dark'] .quick-log-row { border-color: #405258; }
 [data-theme='dark'] .quick-log-row small { color: #abc2c1; }
 @media (max-width: 500px) { .quick-log-row { align-items: flex-start; } .quick-log-row .add-button { padding: 9px; } }
+
+
+/* Tanora brand */
+.tanora-heading { display: flex; align-items: center; gap: 13px; }
+.tanora-heading h1 { margin: 6px 0; }
+.tanora-mark { width: 48px; height: 48px; object-fit: cover; border-radius: 14px; }
+@media (max-width: 500px) { .tanora-mark { width: 42px; height: 42px; border-radius: 12px; } }
