@@ -9,6 +9,7 @@ import './index.css'
 
 function Root() {
   const [session, setSession] = useState<Session | null>(null)
+  const [guestMode, setGuestMode] = useState(() => window.sessionStorage.getItem('nutrition-guest-session') === 'true')
   const [checking, setChecking] = useState(true)
 
   const accountPage =
@@ -52,22 +53,58 @@ function Root() {
     )
   }
 
-  if (accountPage || !session) {
-    return <Auth />
+  if (!session && !guestMode) {
+    return <Auth onTryGuest={() => {
+      window.sessionStorage.setItem('nutrition-guest-session', 'true')
+      setGuestMode(true)
+      window.history.replaceState(null, '', '/')
+    }} />
+  }
+
+  if (accountPage && session) {
+    return <Auth onTryGuest={() => {}} />
   }
 
   return (
     <App
-      key={session.user.id}
-      userId={session.user.id}
-      userEmail={session.user.email ?? ''}
+      key={session?.user.id ?? 'guest'}
+      userId={session?.user.id ?? null}
+      userEmail={session?.user.email ?? ''}
       onSignOut={async () => {
-        const { error } = await supabase.auth.signOut()
-        if (error) {
-          window.alert(error.message)
+        if (!session) {
+          window.sessionStorage.removeItem('nutrition-guest-session')
+          setGuestMode(false)
+          return
         }
+        const { error } = await supabase.auth.signOut()
+        if (error) window.alert(error.message)
       }}
     />
+  )
+}
+
+function ThemeToggle() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = window.localStorage.getItem('nutrition-theme')
+    if (saved === 'light' || saved === 'dark') return saved
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  })
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    document.documentElement.style.colorScheme = theme
+    window.localStorage.setItem('nutrition-theme', theme)
+  }, [theme])
+
+  return (
+    <button
+      className="theme-toggle"
+      type="button"
+      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      onClick={() => setTheme(previous => previous === 'dark' ? 'light' : 'dark')}
+    >
+      {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
+    </button>
   )
 }
 
@@ -76,5 +113,6 @@ ReactDOM.createRoot(
 ).render(
   <React.StrictMode>
     <Root />
+    <ThemeToggle />
   </React.StrictMode>
 )
