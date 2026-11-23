@@ -4,6 +4,7 @@ import { searchIngredients } from './usda'
 import type { USDAFood } from './usda'
 import SmartGoals from './SmartGoals'
 import BarcodeScanner from './BarcodeScanner'
+import ManualFood from './ManualFood'
 import type {
   BarcodeProduct,
   BarcodeNutrition,
@@ -222,7 +223,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
   const [editingGoals, setEditingGoals] = useState(false)
   const [addingFood, setAddingFood] = useState(false)
   const [addMode, setAddMode] = useState<
-    'ingredients' | 'barcode'
+    'ingredients' | 'barcode' | 'manual'
   >('ingredients')
 
   const [searchMode, setSearchMode] = useState<
@@ -558,6 +559,33 @@ function App({ userId, userEmail, onSignOut }: Props) {
     }, guest ? 'Food saved on this device.' : 'Food saved to your account.')
 
     if (success) closeFood()
+  }
+
+  async function saveManualFood(food: Food, entry: Entry, remember: boolean) {
+    const success = await performCloudAction(async () => {
+      if (guest) {
+        saveGuestData({
+          goals,
+          entries: [...entries, entry],
+          favorites: remember ? uniqueFoods([...favorites, food]) : favorites,
+        })
+      } else {
+        await saveCloudEntry(userId!, entry)
+        if (remember) await saveCloudFavorite(userId!, food)
+      }
+      setEntries(previous => [...previous, entry])
+      if (remember) setFavorites(previous => uniqueFoods([...previous, food]))
+    }, guest ? 'Custom food saved on this device.' : 'Custom food saved to your account.')
+
+    if (success) closeFood()
+  }
+
+  async function repeatEntry(entry: Entry) {
+    await saveEntry({
+      ...entry,
+      id: crypto.randomUUID(),
+      date: selectedDate,
+    })
   }
 
   async function addFood() {
@@ -1007,10 +1035,27 @@ function App({ userId, userEmail, onSignOut }: Props) {
               >
                 📷 Scan Barcode
               </button>
+              <button
+                type="button"
+                className={addMode === 'manual' ? 'active' : ''}
+                onClick={() => {
+                  clearSearch()
+                  setAddMode('manual')
+                }}
+              >
+                ✏️ Manual Food
+              </button>
             </div>
           )}
 
-          {addMode === 'barcode' && !editingId ? (
+          {addMode === 'manual' && !editingId ? (
+            <ManualFood
+              date={selectedDate}
+              disabled={busy}
+              onSave={(food, entry, remember) => void saveManualFood(food, entry, remember)}
+              onCancel={closeFood}
+            />
+          ) : addMode === 'barcode' && !editingId ? (
             <BarcodeScanner
               onAdd={(
                 product,
@@ -1317,6 +1362,14 @@ function App({ userId, userEmail, onSignOut }: Props) {
                   onClick={() => editFood(entry)}
                 >
                   Edit
+                </button>
+
+                <button
+                  disabled={busy}
+                  onClick={() => void repeatEntry(entry)}
+                  title="Add another copy of this food today"
+                >
+                  Repeat
                 </button>
 
                 <button
