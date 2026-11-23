@@ -769,7 +769,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
   if (!ready) {
     return (
       <main className="app">
-        <h1>Nutrition Tracker</h1>
+        <h1>Tanora</h1>
         <p>
           {cloudError ||
             (guest ? 'Loading guest nutrition data...' : 'Loading your private nutrition data from Supabase...')}
@@ -788,7 +788,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
       <header className="header">
         <div>
           <p className="eyebrow">
-            YOUR PERSONAL NUTRITION TRACKER
+            TANORA · NUTRITION
           </p>
           <h1>Nutrition Dashboard</h1>
           <p className="subtitle">
@@ -1393,7 +1393,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
       )}
 
       <p className="footer-note">
-        Nutrition Tracker · {guest ? 'Guest Mode (local only)' : 'Account Cloud Sync'}
+        Tanora · {guest ? 'Guest Mode (local only)' : 'Account Cloud Sync'}
       </p>
     </div>
   )
