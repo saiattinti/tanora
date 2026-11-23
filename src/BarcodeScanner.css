@@ -1,0 +1,184 @@
+
+.barcode-panel {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid #dce8e4;
+  border-radius: 16px;
+  background: #f8fbfa;
+  color: #173039;
+}
+
+.barcode-heading,
+.barcode-manual > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.barcode-heading h3,
+.barcode-product h3 {
+  margin: 0 0 6px;
+}
+
+.barcode-heading p,
+.barcode-description,
+.barcode-disclaimer {
+  color: #71808a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.barcode-panel button {
+  cursor: pointer;
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #e4eeeb;
+  color: #176c56;
+  font-weight: 650;
+}
+
+.barcode-panel button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.barcode-camera {
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.barcode-camera video {
+  width: 100% !important;
+  border-radius: 12px;
+}
+
+.barcode-controls {
+  margin: 12px 0 18px;
+}
+
+.barcode-controls button {
+  width: 100%;
+  background: #139e82;
+  color: white;
+}
+
+.barcode-manual {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.barcode-manual label,
+.barcode-product label {
+  font-weight: 650;
+  font-size: 14px;
+}
+
+.barcode-manual input,
+.barcode-product input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #cddbd6;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 16px;
+  background: white;
+  color: #173039;
+}
+
+.barcode-manual > div input {
+  flex: 1;
+}
+
+.barcode-error {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 9px;
+  background: #fff0ee;
+  color: #b63126;
+  font-size: 13px;
+}
+
+.barcode-product {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #dce8e4;
+}
+
+.barcode-source {
+  font-size: 12px;
+  font-weight: 700;
+  color: #139e82;
+}
+
+.barcode-mode {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.barcode-mode button {
+  flex: 1;
+}
+
+.barcode-mode button.selected {
+  background: #139e82;
+  color: white;
+}
+
+.barcode-product label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.barcode-product small {
+  font-size: 12px;
+  color: #71808a;
+}
+
+.barcode-preview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 20px 0;
+}
+
+.barcode-preview > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px;
+  background: white;
+  border: 1px solid #e3ebe8;
+  border-radius: 10px;
+}
+
+.barcode-preview strong {
+  font-size: 18px;
+}
+
+.barcode-preview span {
+  color: #71808a;
+  font-size: 12px;
+}
+
+.barcode-panel .barcode-add {
+  width: 100%;
+  background: #139e82;
+  color: white;
+}
+
+@media (max-width: 600px) {
+  .barcode-heading {
+    align-items: flex-start;
+  }
+
+  .barcode-heading button {
+    flex-shrink: 0;
+  }
+}

@@ -1,0 +1,261 @@
+
+.auth-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background:
+    radial-gradient(
+      circle at 15% 10%,
+      #dff7eb 0,
+      transparent 36%
+    ),
+    linear-gradient(150deg, #f5faf8, #edf4f5);
+  color: #183039;
+  font-family: inherit;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 450px;
+  padding: 36px;
+  background: white;
+  border: 1px solid #e0ebe5;
+  border-radius: 24px;
+  box-shadow: 0 16px 55px rgba(17, 55, 45, 0.08);
+}
+
+.auth-brand {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.auth-symbol {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 17px;
+  background: #139e82;
+  color: white;
+  font-size: 27px;
+  font-weight: 800;
+}
+
+.auth-brand h1 {
+  margin: 0;
+  color: #183039;
+  font-size: 24px;
+  letter-spacing: -0.6px;
+}
+
+.auth-brand p,
+.auth-heading p {
+  color: #71848b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.auth-brand p {
+  margin: 8px 0 0;
+}
+
+.auth-heading {
+  margin-bottom: 22px;
+}
+
+.auth-heading h2 {
+  margin: 0 0 7px;
+  font-size: 21px;
+  color: #183039;
+}
+
+.auth-heading p {
+  margin: 0;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 17px;
+  color: #30454c;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.auth-field input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #d7e3df;
+  border-radius: 11px;
+  background: white;
+  color: #183039;
+  font-family: inherit;
+  font-size: 16px;
+  outline: none;
+}
+
+.auth-field input:focus {
+  border-color: #139e82;
+  box-shadow: 0 0 0 3px rgba(19, 158, 130, 0.12);
+}
+
+.auth-primary,
+.auth-secondary {
+  width: 100%;
+  padding: 14px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-primary {
+  background: #139e82;
+  color: #fff;
+}
+
+.auth-primary:hover {
+  background: #10866e;
+}
+
+.auth-secondary {
+  background: #eef4f1;
+  color: #176d57;
+}
+
+.auth-primary:disabled,
+.auth-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth-text-button,
+.auth-switch button {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: #10866e;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-forgot {
+  display: block;
+  margin: 0 0 15px auto;
+  font-size: 13px;
+}
+
+.auth-switch {
+  margin: 22px 0 0;
+  text-align: center;
+  color: #71848b;
+  font-size: 13px;
+}
+
+.auth-back {
+  display: block;
+  margin-top: 25px;
+  text-align: center;
+  color: #71848b;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.auth-back:hover {
+  color: #10866e;
+  text-decoration: underline;
+}
+
+.auth-error,
+.auth-message {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.auth-error {
+  color: #b62e24;
+  background: #fff0ef;
+}
+
+.auth-message {
+  color: #087453;
+  background: #e9f7f0;
+}
+
+.auth-signed-in {
+  text-align: center;
+  padding: 18px 0;
+}
+
+.auth-check {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  color: #087453;
+  background: #e9f7f0;
+  font-size: 24px;
+}
+
+.auth-signed-in h2 {
+  margin: 0 0 8px;
+}
+
+.auth-signed-in p {
+  margin: 5px 0;
+  color: #71848b;
+  overflow-wrap: anywhere;
+}
+
+.auth-signed-in .auth-username {
+  color: #183039;
+  font-weight: 700;
+}
+
+.auth-notice {
+  padding: 15px;
+  margin: 12px 0 20px;
+  border-radius: 12px;
+  background: #f1f6f5;
+  font-size: 13px;
+}
+
+.auth-notice p {
+  margin-bottom: 0;
+  color: #60757a;
+  line-height: 1.6;
+}
+
+.auth-loading {
+  text-align: center;
+  color: #71848b;
+}
+
+@media (max-width: 500px) {
+  .auth-page {
+    padding: 15px;
+    align-items: center;
+  }
+
+  .auth-card {
+    padding: 26px 20px;
+    border-radius: 18px;
+  }
+}

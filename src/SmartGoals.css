@@ -1,0 +1,279 @@
+
+.smart-goals {
+  margin-bottom: 24px;
+}
+
+.smart-goals-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.smart-goals-heading h2 {
+  margin: 0 0 8px;
+}
+
+.smart-goals-heading p,
+.smart-helper,
+.smart-formula {
+  color: #84909c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.smart-reset {
+  padding: 10px 14px;
+  background: #e7f7f1;
+  color: #087f5b;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.smart-calorie-box {
+  padding: 20px;
+  background: #f6f8fa;
+  border-radius: 14px;
+  margin: 22px 0;
+}
+
+.smart-calorie-box label,
+.smart-entry-row label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.smart-number-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.smart-number-input input,
+.smart-entry-row input {
+  width: 100%;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #dce3e9;
+  border-radius: 10px;
+  background: white;
+  color: #172b32;
+  font-size: 16px;
+}
+
+.smart-number-input span {
+  color: #687283;
+}
+
+.smart-step {
+  padding: 22px 0;
+  border-top: 1px solid #edf0f4;
+}
+
+.smart-step-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.smart-step-title h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.smart-step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  background: #e7f7f1;
+  color: #087f5b;
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.smart-macro-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.smart-macro-options button {
+  padding: 10px 14px;
+  border: 1px solid #dce3e9;
+  border-radius: 10px;
+  background: white;
+  color: #687283;
+}
+
+.smart-macro-options button.selected {
+  background: #e7f7f1;
+  border-color: #16a085;
+  color: #087f5b;
+}
+
+.smart-entry-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 20px;
+}
+
+.smart-allocation,
+.smart-result-percent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  padding-bottom: 10px;
+}
+
+.smart-allocation strong {
+  font-size: 22px;
+}
+
+.smart-allocation small,
+.smart-result small {
+  color: #84909c;
+  font-size: 12px;
+}
+
+.smart-progress,
+.smart-summary-bar {
+  height: 9px;
+  background: #edf0f4;
+  overflow: hidden;
+  border-radius: 99px;
+}
+
+.smart-progress > div {
+  height: 100%;
+  border-radius: 99px;
+}
+
+.smart-remaining {
+  font-size: 14px;
+  color: #087f5b;
+  font-weight: 600;
+}
+
+.smart-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px;
+  background: #f6f8fa;
+  border-radius: 14px;
+}
+
+.smart-result > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.smart-result > div:first-child strong {
+  font-size: 30px;
+}
+
+.smart-result-percent strong {
+  font-size: 20px;
+}
+
+.smart-summary {
+  margin-top: 4px;
+  padding: 20px;
+  background: #f6f8fa;
+  border-radius: 14px;
+}
+
+.smart-summary h3 {
+  margin: 0 0 18px;
+  font-size: 16px;
+}
+
+.smart-summary-bar {
+  display: flex;
+  height: 13px;
+}
+
+.smart-summary-bar > div {
+  height: 100%;
+}
+
+.smart-summary-details {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+.smart-success {
+  color: #087f5b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.smart-error {
+  color: #c0392b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.smart-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.smart-cancel,
+.smart-save {
+  padding: 13px 20px;
+  border-radius: 12px;
+}
+
+.smart-cancel {
+  background: #edf0f4;
+  color: #687283;
+}
+
+.smart-save {
+  background: #16a085;
+  color: white;
+}
+
+.smart-save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .smart-goals-heading {
+    flex-direction: column;
+  }
+
+  .smart-entry-row {
+    gap: 10px;
+  }
+
+  .smart-result > div:first-child strong {
+    font-size: 24px;
+  }
+
+  .smart-macro-options button {
+    flex: 1;
+  }
+
+  .smart-actions button {
+    flex: 1;
+  }
+}
