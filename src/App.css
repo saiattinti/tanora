@@ -655,3 +655,16 @@ button {
 @media (max-width: 600px) {
   .search-mode-switch button { flex: 1 1 105px; }
 }
+
+
+/* Tanora v1.2: quick re-logging */
+.quick-log-section { margin-top: 16px; }
+.quick-log-section h2 { margin-top: 0; margin-bottom: 4px; }
+.quick-log-list { display: grid; gap: 9px; margin-top: 14px; }
+.quick-log-row { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid #e3ebe8; }
+.quick-log-row strong { display: block; font-size: 14px; line-height: 1.3; }
+.quick-log-row small { display: block; margin-top: 6px; color: #84909c; font-size: 12px; }
+.quick-log-row .add-button { flex-shrink: 0; font-size: 13px; padding: 10px 12px; }
+[data-theme='dark'] .quick-log-row { border-color: #405258; }
+[data-theme='dark'] .quick-log-row small { color: #abc2c1; }
+@media (max-width: 500px) { .quick-log-row { align-items: flex-start; } .quick-log-row .add-button { padding: 9px; } }
