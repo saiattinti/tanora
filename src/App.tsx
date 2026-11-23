@@ -85,6 +85,9 @@ function macrosFor(food: Food, grams: number): Macros {
 }
 
 function possiblePortions(food: Food): Portion[] {
+  if (food.servingSize && food.servingSize > 0) {
+    return [{ label: `1 serving (${food.servingSize} ${food.unit ?? 'g'})`, grams: food.servingSize }]
+  }
   const name = food.name.toLowerCase()
 
   if (/tomato/.test(name) &&
@@ -239,6 +242,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
   const [quantity, setQuantity] = useState('1')
   const [portionMode, setPortionMode] = useState('grams')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingCustomFood, setEditingCustomFood] = useState<Food | null>(null)
   const [editingUnit, setEditingUnit] = useState<'g' | 'ml'>('g')
 
   const [loading, setLoading] = useState(false)
@@ -417,7 +421,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
   const recentFoods = uniqueFoods(
     entries
       .slice()
-      .reverse()
+      .sort((a, b) => b.date.localeCompare(a.date))
       .map(entry => entry.food)
       .filter((food): food is Food => Boolean(food))
   )
@@ -478,6 +482,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
     clearSearch()
     setAddingFood(false)
     setEditingId(null)
+    setEditingCustomFood(null)
     setEditingUnit('g')
     setAddMode('ingredients')
     setSelectedFood(null)
@@ -519,7 +524,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
 
   function selectFood(food: Food) {
     setSelectedFood(food)
-    setEditingUnit('g')
+    setEditingUnit(food.unit ?? 'g')
     setGrams('100')
     setQuantity('1')
     setPortionMode('grams')
@@ -561,23 +566,36 @@ function App({ userId, userEmail, onSignOut }: Props) {
     if (success) closeFood()
   }
 
-  async function saveManualFood(food: Food, entry: Entry, remember: boolean) {
+  async function saveManualFood(food: Food, entry: Entry, remember: boolean, saveOnly: boolean) {
+    const nextFavorites = remember
+      ? uniqueFoods([...favorites.filter(item => item.id !== food.id), food])
+      : favorites
+    const nextEntries = saveOnly ? entries : [...entries, entry]
+
     const success = await performCloudAction(async () => {
       if (guest) {
         saveGuestData({
           goals,
-          entries: [...entries, entry],
-          favorites: remember ? uniqueFoods([...favorites, food]) : favorites,
+          entries: nextEntries,
+          favorites: nextFavorites,
         })
       } else {
-        await saveCloudEntry(userId!, entry)
         if (remember) await saveCloudFavorite(userId!, food)
+        if (!saveOnly) await saveCloudEntry(userId!, entry)
       }
-      setEntries(previous => [...previous, entry])
-      if (remember) setFavorites(previous => uniqueFoods([...previous, food]))
-    }, guest ? 'Custom food saved on this device.' : 'Custom food saved to your account.')
+      if (!saveOnly) setEntries(nextEntries)
+      if (remember) setFavorites(nextFavorites)
+    }, saveOnly ? 'Saved custom food updated.' : guest ? 'Custom food saved on this device.' : 'Custom food saved to your account.')
 
     if (success) closeFood()
+  }
+
+  function editSavedCustomFood(food: Food) {
+    setEditingCustomFood(food)
+    setEditingId(null)
+    setAddingFood(true)
+    setAddMode('manual')
+    clearSearch()
   }
 
   async function repeatEntry(entry: Entry) {
@@ -665,6 +683,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
     setPortionMode('grams')
     setEditingUnit(entry.unit ?? 'g')
     setEditingId(entry.id)
+    setEditingCustomFood(null)
     setSearchMode('ingredients')
     setAddingFood(true)
   }
@@ -740,6 +759,17 @@ function App({ userId, userEmail, onSignOut }: Props) {
           </span>
         </button>
 
+        {food.source === 'Custom food' && isFavorite && (
+          <button
+            type="button"
+            className="settings-button"
+            disabled={busy}
+            onClick={() => editSavedCustomFood(food)}
+            title="Edit this saved custom food"
+          >
+            Edit
+          </button>
+        )}
         <button
           type="button"
           className="favorite-button"
@@ -1053,7 +1083,9 @@ function App({ userId, userEmail, onSignOut }: Props) {
             <ManualFood
               date={selectedDate}
               disabled={busy}
-              onSave={(food, entry, remember) => void saveManualFood(food, entry, remember)}
+              key={editingCustomFood?.id ?? 'new'}
+              initialFood={editingCustomFood ?? undefined}
+              onSave={(food, entry, remember, saveOnly) => void saveManualFood(food, entry, remember, saveOnly)}
               onCancel={closeFood}
             />
           ) : addMode === 'barcode' && !editingId ? (
