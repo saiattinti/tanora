@@ -77,7 +77,12 @@ function Root() {
           return
         }
         const { error } = await supabase.auth.signOut()
-        if (error) window.alert(error.message)
+        if (error) {
+          window.alert(error.message)
+        } else {
+          window.sessionStorage.removeItem('nutrition-guest-session')
+          setGuestMode(false)
+        }
       }}
     />
   )
