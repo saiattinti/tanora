@@ -4,6 +4,7 @@ import { searchIngredients } from './usda'
 import type { USDAFood } from './usda'
 import SmartGoals from './SmartGoals'
 import BarcodeScanner from './BarcodeScanner'
+import ManualFood from './ManualFood'
 import type {
   BarcodeProduct,
   BarcodeNutrition,
@@ -84,6 +85,9 @@ function macrosFor(food: Food, grams: number): Macros {
 }
 
 function possiblePortions(food: Food): Portion[] {
+  if (food.servingSize && food.servingSize > 0) {
+    return [{ label: `1 serving (${food.servingSize} ${food.unit ?? 'g'})`, grams: food.servingSize }]
+  }
   const name = food.name.toLowerCase()
 
   if (/tomato/.test(name) &&
@@ -222,7 +226,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
   const [editingGoals, setEditingGoals] = useState(false)
   const [addingFood, setAddingFood] = useState(false)
   const [addMode, setAddMode] = useState<
-    'ingredients' | 'barcode'
+    'ingredients' | 'barcode' | 'manual'
   >('ingredients')
 
   const [searchMode, setSearchMode] = useState<
@@ -238,6 +242,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
   const [quantity, setQuantity] = useState('1')
   const [portionMode, setPortionMode] = useState('grams')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingCustomFood, setEditingCustomFood] = useState<Food | null>(null)
   const [editingUnit, setEditingUnit] = useState<'g' | 'ml'>('g')
 
   const [loading, setLoading] = useState(false)
@@ -305,6 +310,24 @@ function App({ userId, userEmail, onSignOut }: Props) {
       active = false
     }
   }, [userId, guest])
+
+  // Bring the cloud account up to date when returning from another device.
+  // Guest data never enters this path.
+  useEffect(() => {
+    if (guest || !ready) return
+    const updateWhenVisible = () => {
+      if (document.visibilityState !== 'visible' || busyRef.current) return
+      void refresh().catch(error => setCloudError(
+        error instanceof Error ? error.message : 'Could not refresh cloud data.'
+      ))
+    }
+    document.addEventListener('visibilitychange', updateWhenVisible)
+    window.addEventListener('focus', updateWhenVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', updateWhenVisible)
+      window.removeEventListener('focus', updateWhenVisible)
+    }
+  }, [guest, ready, refresh])
 
   async function performCloudAction(
     action: () => Promise<void>,
@@ -413,10 +436,19 @@ function App({ userId, userEmail, onSignOut }: Props) {
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   )
 
+  const quickLogEntries = entries
+    .slice()
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .filter(entry => Boolean(entry.food))
+    .filter((entry, index, list) =>
+      list.findIndex(item => item.food?.id === entry.food?.id) === index
+    )
+    .slice(0, 5)
+
   const recentFoods = uniqueFoods(
     entries
       .slice()
-      .reverse()
+      .sort((a, b) => b.date.localeCompare(a.date))
       .map(entry => entry.food)
       .filter((food): food is Food => Boolean(food))
   )
@@ -438,7 +470,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
   const starterMatches = starterFoods.filter(matches)
 
   const portions =
-    selectedFood && editingUnit === 'g'
+    selectedFood && (editingUnit === 'g' || selectedFood.servingSize)
       ? possiblePortions(selectedFood)
       : []
 
@@ -477,6 +509,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
     clearSearch()
     setAddingFood(false)
     setEditingId(null)
+    setEditingCustomFood(null)
     setEditingUnit('g')
     setAddMode('ingredients')
     setSelectedFood(null)
@@ -518,7 +551,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
 
   function selectFood(food: Food) {
     setSelectedFood(food)
-    setEditingUnit('g')
+    setEditingUnit(food.unit ?? 'g')
     setGrams('100')
     setQuantity('1')
     setPortionMode('grams')
@@ -560,6 +593,46 @@ function App({ userId, userEmail, onSignOut }: Props) {
     if (success) closeFood()
   }
 
+  async function saveManualFood(food: Food, entry: Entry, remember: boolean, saveOnly: boolean) {
+    const nextFavorites = remember
+      ? uniqueFoods([...favorites.filter(item => item.id !== food.id), food])
+      : favorites
+    const nextEntries = saveOnly ? entries : [...entries, entry]
+
+    const success = await performCloudAction(async () => {
+      if (guest) {
+        saveGuestData({
+          goals,
+          entries: nextEntries,
+          favorites: nextFavorites,
+        })
+      } else {
+        if (remember) await saveCloudFavorite(userId!, food)
+        if (!saveOnly) await saveCloudEntry(userId!, entry)
+      }
+      if (!saveOnly) setEntries(nextEntries)
+      if (remember) setFavorites(nextFavorites)
+    }, saveOnly ? 'Saved custom food updated.' : guest ? 'Custom food saved on this device.' : 'Custom food saved to your account.')
+
+    if (success) closeFood()
+  }
+
+  function editSavedCustomFood(food: Food) {
+    setEditingCustomFood(food)
+    setEditingId(null)
+    setAddingFood(true)
+    setAddMode('manual')
+    clearSearch()
+  }
+
+  async function repeatEntry(entry: Entry) {
+    await saveEntry({
+      ...entry,
+      id: crypto.randomUUID(),
+      date: selectedDate,
+    })
+  }
+
   async function addFood() {
     if (!selectedFood || !preview || busy) return
 
@@ -579,7 +652,8 @@ function App({ userId, userEmail, onSignOut }: Props) {
   async function addBarcodeFood(
     product: BarcodeProduct,
     portionAmount: number,
-    nutrition: BarcodeNutrition
+    nutrition: BarcodeNutrition,
+    perHundred: BarcodeNutrition
   ) {
     if (busy) return
 
@@ -589,10 +663,12 @@ function App({ userId, userEmail, onSignOut }: Props) {
         ? `${product.brand} ${product.name}`
         : product.name,
       source: 'Open Food Facts',
-      calories: product.calories,
-      protein: product.protein,
-      carbs: product.carbs,
-      fat: product.fat,
+      servingSize: product.servingSize ?? undefined,
+      unit: product.servingUnit,
+      calories: perHundred.calories,
+      protein: perHundred.protein,
+      carbs: perHundred.carbs,
+      fat: perHundred.fat,
     }
 
     await saveEntry({
@@ -636,6 +712,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
     setPortionMode('grams')
     setEditingUnit(entry.unit ?? 'g')
     setEditingId(entry.id)
+    setEditingCustomFood(null)
     setSearchMode('ingredients')
     setAddingFood(true)
   }
@@ -711,6 +788,17 @@ function App({ userId, userEmail, onSignOut }: Props) {
           </span>
         </button>
 
+        {food.source === 'Custom food' && isFavorite && (
+          <button
+            type="button"
+            className="settings-button"
+            disabled={busy}
+            onClick={() => editSavedCustomFood(food)}
+            title="Edit this saved custom food"
+          >
+            Edit
+          </button>
+        )}
         <button
           type="button"
           className="favorite-button"
@@ -740,7 +828,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
   if (!ready) {
     return (
       <main className="app">
-        <h1>Nutrition Tracker</h1>
+        <h1>Tanora</h1>
         <p>
           {cloudError ||
             (guest ? 'Loading guest nutrition data...' : 'Loading your private nutrition data from Supabase...')}
@@ -759,9 +847,12 @@ function App({ userId, userEmail, onSignOut }: Props) {
       <header className="header">
         <div>
           <p className="eyebrow">
-            YOUR PERSONAL NUTRITION TRACKER
+            TANORA · NUTRITION
           </p>
-          <h1>Nutrition Dashboard</h1>
+          <div className="tanora-heading">
+            <img src="/tanora-icon.svg" alt="" className="tanora-mark" />
+            <h1>Tanora</h1>
+          </div>
           <p className="subtitle">
             Track your daily calories and macros.
           </p>
@@ -976,6 +1067,31 @@ function App({ userId, userEmail, onSignOut }: Props) {
         </button>
       </section>
 
+      {quickLogEntries.length > 0 && !addingFood && (
+        <section className="card quick-log-section">
+          <div>
+            <h2>Quick Log</h2>
+            <p className="form-description">
+              Repeat the same amount from a past entry on {displayDate}.
+            </p>
+          </div>
+          <div className="quick-log-list">
+            {quickLogEntries.map(entry => (
+              <div className="quick-log-row" key={entry.food!.id}>
+                <div>
+                  <strong>{entry.name}</strong>
+                  <small>{Math.round(entry.grams * 10) / 10} {entry.unit ?? 'g'} · {Math.round(entry.calories)} kcal</small>
+                </div>
+                <button type="button" className="add-button"
+                  disabled={busy} onClick={() => void repeatEntry(entry)}>
+                  + Log Again
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {addingFood && (
         <section className="card food-form">
           <h2>{editingId ? 'Edit Food' : 'Add Food'}</h2>
@@ -988,6 +1104,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
                   addMode === 'ingredients' ? 'active' : ''
                 }
                 onClick={() => {
+                  setEditingCustomFood(null)
                   setAddMode('ingredients')
                   clearSearch()
                 }}
@@ -1001,29 +1118,56 @@ function App({ userId, userEmail, onSignOut }: Props) {
                   addMode === 'barcode' ? 'active' : ''
                 }
                 onClick={() => {
+                  setEditingCustomFood(null)
                   clearSearch()
                   setAddMode('barcode')
                 }}
               >
                 📷 Scan Barcode
               </button>
+              <button
+                type="button"
+                className={addMode === 'manual' ? 'active' : ''}
+                onClick={() => {
+                  setEditingCustomFood(null)
+                  clearSearch()
+                  setAddMode('manual')
+                }}
+              >
+                ✏️ Manual Food
+              </button>
             </div>
           )}
 
-          {addMode === 'barcode' && !editingId ? (
+          {addMode === 'manual' && !editingId ? (
+            <ManualFood
+              date={selectedDate}
+              disabled={busy}
+              key={editingCustomFood?.id ?? 'new'}
+              initialFood={editingCustomFood ?? undefined}
+              onSave={(food, entry, remember, saveOnly) => void saveManualFood(food, entry, remember, saveOnly)}
+              onCancel={closeFood}
+            />
+          ) : addMode === 'barcode' && !editingId ? (
             <BarcodeScanner
               onAdd={(
                 product,
                 portionAmount,
-                nutrition
+                nutrition,
+                perHundred
               ) => {
                 void addBarcodeFood(
                   product,
                   portionAmount,
-                  nutrition
+                  nutrition,
+                  perHundred
                 )
               }}
               onCancel={() => setAddMode('ingredients')}
+              onManual={() => {
+                clearSearch()
+                setAddMode('manual')
+              }}
             />
           ) : (
             <>
@@ -1215,7 +1359,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
                       />
 
                       <p className="form-description">
-                        Estimated total: {Math.round(amount)} g
+                        Estimated total: {Math.round(amount)} {editingUnit}
                       </p>
                     </>
                   ) : (
@@ -1320,6 +1464,14 @@ function App({ userId, userEmail, onSignOut }: Props) {
                 </button>
 
                 <button
+                  disabled={busy}
+                  onClick={() => void repeatEntry(entry)}
+                  title="Add another copy of this food today"
+                >
+                  Repeat
+                </button>
+
+                <button
                   className="delete-button"
                   disabled={busy}
                   onClick={() => void removeEntry(entry.id)}
@@ -1333,7 +1485,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
       )}
 
       <p className="footer-note">
-        Nutrition Tracker · {guest ? 'Guest Mode (local only)' : 'Account Cloud Sync'}
+        Tanora · {guest ? 'Guest Mode (local only)' : 'Account Cloud Sync'}
       </p>
     </div>
   )

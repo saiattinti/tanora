@@ -7,8 +7,7 @@ import './Auth.css'
 
 type Screen = 'login' | 'signup' | 'forgot' | 'update'
 
-const APP_URL =
-  'https://personal-nutrition-tracker-5a0.pages.dev'
+const APP_URL = window.location.origin
 
 export default function Auth({ onTryGuest }: { onTryGuest: () => void }) {
   const [screen, setScreen] = useState<Screen>('login')
@@ -233,8 +232,8 @@ export default function Auth({ onTryGuest }: { onTryGuest: () => void }) {
       <main className="auth-page">
         <section className="auth-card">
           <div className="auth-brand">
-            <div className="auth-symbol">N</div>
-            <h1>Nutrition Tracker</h1>
+            <img className="auth-symbol" src="/tanora-icon.svg" alt="Tanora app icon" />
+            <h1>Tanora</h1>
             <p>Your personal nutrition account</p>
           </div>
 
@@ -262,7 +261,7 @@ export default function Auth({ onTryGuest }: { onTryGuest: () => void }) {
             type="button"
             onClick={() => window.location.assign('/')}
           >
-            Open Existing Nutrition Tracker
+            Open Existing Tanora
           </button>
 
           <button
@@ -294,14 +293,14 @@ export default function Auth({ onTryGuest }: { onTryGuest: () => void }) {
         ? 'Enter your email to request a reset link.'
         : screen === 'update'
           ? 'Enter your new account password.'
-          : 'Sign in to your Nutrition Tracker account.'
+          : 'Sign in to your Tanora account.'
 
   return (
     <main className="auth-page">
       <section className="auth-card">
         <div className="auth-brand">
-          <div className="auth-symbol">N</div>
-          <h1>Nutrition Tracker</h1>
+          <img className="auth-symbol" src="/tanora-icon.svg" alt="Tanora app icon" />
+          <h1>Tanora</h1>
           <p>Smart nutrition, simplified.</p>
         </div>
 
@@ -470,7 +469,7 @@ export default function Auth({ onTryGuest }: { onTryGuest: () => void }) {
         )}
 
         <a className="auth-back" href="/">
-          Nutrition Tracker home
+          Tanora home
         </a>
       </section>
     </main>

@@ -10,10 +10,10 @@ export type BarcodeProduct = {
   barcode: string
   name: string
   brand: string
-  calories: number
-  protein: number
-  carbs: number
-  fat: number
+  calories: number | null
+  protein: number | null
+  carbs: number | null
+  fat: number | null
   servingSize: number | null
   servingUnit: 'g' | 'ml'
   servingDescription: string
@@ -30,12 +30,14 @@ type Props = {
   onAdd: (
     product: BarcodeProduct,
     amount: number,
-    nutrition: BarcodeNutrition
+    nutrition: BarcodeNutrition,
+    perHundred: BarcodeNutrition
   ) => void
   onCancel: () => void
+  onManual: () => void
 }
 
-const scannerId = 'nutrition-barcode-camera'
+const scannerId = 'tanora-barcode-camera'
 
 function format(number: number): string {
   return Number(number.toFixed(2)).toLocaleString()
@@ -44,6 +46,7 @@ function format(number: number): string {
 export default function BarcodeScanner({
   onAdd,
   onCancel,
+  onManual,
 }: Props) {
   const scanner = useRef<Html5Qrcode | null>(null)
   const busy = useRef(false)
@@ -53,11 +56,16 @@ export default function BarcodeScanner({
   const [starting, setStarting] = useState(false)
   const [barcode, setBarcode] = useState('')
   const [product, setProduct] = useState<BarcodeProduct | null>(null)
+  const [productName, setProductName] = useState('')
+  const [brand, setBrand] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [mode, setMode] = useState<'amount' | 'servings'>('servings')
   const [amountInput, setAmountInput] = useState('100')
   const [servingsInput, setServingsInput] = useState('1')
+  const [corrected, setCorrected] = useState({
+    calories: '', protein: '', carbs: '', fat: '',
+  })
 
   useEffect(() => {
     mounted.current = true
@@ -129,6 +137,14 @@ export default function BarcodeScanner({
       if (!mounted.current) return
 
       setProduct(data)
+      setProductName(data.name)
+      setBrand(data.brand)
+      setCorrected({
+        calories: data.calories === null ? '' : String(data.calories),
+        protein: data.protein === null ? '' : String(data.protein),
+        carbs: data.carbs === null ? '' : String(data.carbs),
+        fat: data.fat === null ? '' : String(data.fat),
+      })
       setAmountInput(
         String(data.servingSize ?? 100)
       )
@@ -228,15 +244,27 @@ export default function BarcodeScanner({
     amount > 0 &&
     amount <= 100000
 
+  const keys = ['calories', 'protein', 'carbs', 'fat'] as const
+  const complete = keys.every(key => {
+    const value = corrected[key].trim() === '' ? NaN : Number(corrected[key])
+    return Number.isFinite(value) && value >= 0 && value <= 100000
+  })
+  const perHundred: BarcodeNutrition | null = complete ? {
+    calories: Number(corrected.calories),
+    protein: Number(corrected.protein),
+    carbs: Number(corrected.carbs),
+    fat: Number(corrected.fat),
+  } : null
   const nutrition: BarcodeNutrition | null =
-    product && validAmount
-      ? {
-          calories: product.calories * amount / 100,
-          protein: product.protein * amount / 100,
-          carbs: product.carbs * amount / 100,
-          fat: product.fat * amount / 100,
-        }
-      : null
+    perHundred && validAmount ? {
+      calories: perHundred.calories * amount / 100,
+      protein: perHundred.protein * amount / 100,
+      carbs: perHundred.carbs * amount / 100,
+      fat: perHundred.fat * amount / 100,
+    } : null
+  const missing = product ? keys.filter(key => product[key] === null) : []
+  const changed = product ? keys.some(key => product[key] !== null &&
+    corrected[key] !== String(product[key])) : false
 
   return (
     <section className="barcode-panel">
@@ -310,26 +338,66 @@ export default function BarcodeScanner({
       </form>
 
       {error && (
-        <p role="alert" className="barcode-error">
-          {error}
-        </p>
+        <div role="alert" className="barcode-error">
+          <p>{error}</p>
+          <button type="button" onClick={onManual}>
+            Enter this food manually
+          </button>
+        </div>
       )}
 
       {product && (
         <div className="barcode-product">
           <p className="barcode-source">Open Food Facts</p>
 
-          <h3>{product.name}</h3>
-
-          {product.brand && <p>{product.brand}</p>}
+          <h3>Confirm product details</h3>
+          <label>
+            Product name
+            <input
+              value={productName}
+              maxLength={150}
+              onChange={event => setProductName(event.target.value)}
+              placeholder="Product name"
+            />
+          </label>
+          <label>
+            Brand (optional)
+            <input
+              value={brand}
+              maxLength={100}
+              onChange={event => setBrand(event.target.value)}
+              placeholder="Brand"
+            />
+          </label>
 
           <p className="barcode-description">
-            Per 100 {product.servingUnit}:{' '}
-            {format(product.calories)} kcal ·
-            P {format(product.protein)} g ·
-            C {format(product.carbs)} g ·
-            F {format(product.fat)} g
+            Nutrition per 100 {product.servingUnit}. Check each value against the package label.
           </p>
+          {(missing.length > 0 || changed) && (
+            <p className="barcode-disclaimer" role="status">
+              {missing.length > 0
+                ? `Missing: ${missing.join(', ')}. Enter the missing values from the label before logging.`
+                : 'You have adjusted the database values. Your corrections will be used for this entry.'}
+            </p>
+          )}
+          <div className="barcode-preview barcode-edit-grid">
+            {keys.map(key => (
+              <label key={key}>
+                {key === 'calories' ? 'Calories per 100' : `${key.charAt(0).toUpperCase() + key.slice(1)} (g) per 100`}
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="any"
+                  placeholder="Required"
+                  value={corrected[key]}
+                  onChange={event => setCorrected(current => ({
+                    ...current, [key]: event.target.value,
+                  }))}
+                />
+              </label>
+            ))}
+          </div>
 
           <div className="barcode-mode">
             <button
@@ -413,10 +481,10 @@ export default function BarcodeScanner({
           <button
             className="barcode-add"
             type="button"
-            disabled={!nutrition}
+            disabled={!nutrition || !productName.trim()}
             onClick={() => {
-              if (nutrition && validAmount) {
-                onAdd(product, amount, nutrition)
+              if (nutrition && validAmount && perHundred && productName.trim()) {
+                onAdd({ ...product, name: productName.trim(), brand: brand.trim() }, amount, nutrition, perHundred)
               }
             }}
           >

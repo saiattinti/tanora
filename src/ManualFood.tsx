@@ -1,0 +1,177 @@
+import { useState } from 'react'
+import type { FormEvent } from 'react'
+import type { SavedEntry, SavedFood } from './lib/nutritionStorage'
+import './ManualFood.css'
+
+type Props = {
+  date: string
+  disabled: boolean
+  onSave: (food: SavedFood, entry: SavedEntry, remember: boolean, saveOnly: boolean) => void
+  onCancel: () => void
+  initialFood?: SavedFood
+}
+
+const parseAmount = (value: string): number =>
+  value.trim() === '' ? NaN : Number(value)
+
+export default function ManualFood({ date, disabled, onSave, onCancel, initialFood }: Props) {
+  const [name, setName] = useState(initialFood?.name ?? '')
+  const [unit, setUnit] = useState<'g' | 'ml'>(initialFood?.unit ?? 'g')
+  const [servingSize, setServingSize] = useState(String(initialFood?.servingSize ?? 100))
+  const [servings, setServings] = useState('1')
+  const [calories, setCalories] = useState(initialFood ? String(initialFood.calories * (initialFood.servingSize ?? 100) / 100) : '')
+  const [protein, setProtein] = useState(initialFood ? String(initialFood.protein * (initialFood.servingSize ?? 100) / 100) : '')
+  const [carbs, setCarbs] = useState(initialFood ? String(initialFood.carbs * (initialFood.servingSize ?? 100) / 100) : '')
+  const [fat, setFat] = useState(initialFood ? String(initialFood.fat * (initialFood.servingSize ?? 100) / 100) : '')
+  const [remember, setRemember] = useState(true)
+  const [saveOnly, setSaveOnly] = useState(Boolean(initialFood))
+
+  const size = parseAmount(servingSize)
+  const count = parseAmount(servings)
+  const values = [calories, protein, carbs, fat].map(parseAmount)
+  const valid = name.trim().length > 0 &&
+    name.trim().length <= 150 &&
+    Number.isFinite(size) && size > 0 && size <= 100000 &&
+    Number.isFinite(count) && count > 0 && count <= 1000 &&
+    size * count <= 100000 &&
+    values.every(value => Number.isFinite(value) && value >= 0 && value <= 100000)
+
+  // Manual entries require calorie consistency with the 4/4/9 macro formula.
+  // A 1 kcal allowance accommodates decimal entry rounding only.
+  const calculatedCalories = values[1] * 4 + values[2] * 4 + values[3] * 9
+  const calorieDifference = Number.isFinite(values[0]) && Number.isFinite(calculatedCalories)
+    ? Math.abs(values[0] - calculatedCalories)
+    : NaN
+  const caloriesMatch = Number.isFinite(calorieDifference) && calorieDifference <= 1
+
+  const total = valid && caloriesMatch ? {
+    calories: values[0] * count,
+    protein: values[1] * count,
+    carbs: values[2] * count,
+    fat: values[3] * count,
+  } : null
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!valid || !caloriesMatch || !total || disabled) return
+
+    const food: SavedFood = {
+      id: initialFood?.id ?? crypto.randomUUID(),
+      name: name.trim(),
+      source: 'Custom food',
+      servingSize: size,
+      unit,
+      calories: values[0] * 100 / size,
+      protein: values[1] * 100 / size,
+      carbs: values[2] * 100 / size,
+      fat: values[3] * 100 / size,
+    }
+
+    const entry: SavedEntry = {
+      id: crypto.randomUUID(),
+      name: food.name,
+      food,
+      date,
+      grams: size * count,
+      unit,
+      ...total,
+    }
+
+    onSave(food, entry, initialFood ? true : remember, Boolean(initialFood) && saveOnly)
+  }
+
+  return (
+    <form className="manual-food" onSubmit={submit}>
+      <p className="form-description">
+        {initialFood ? 'Update this custom food. Previously logged meals stay unchanged.' : 'Enter nutrition exactly as it appears on the label, per serving.'}
+        Fractions such as 0.5 or 1.25 servings are supported.
+      </p>
+      <label>
+        Food name
+        <input required maxLength={150} value={name}
+          onChange={event => setName(event.target.value)}
+          placeholder="e.g. Homemade chicken curry" />
+      </label>
+      <div className="manual-food-row">
+        <label>
+          Serving size
+          <input required type="number" min="0.01" step="any"
+            inputMode="decimal" value={servingSize}
+            onChange={event => setServingSize(event.target.value)} />
+        </label>
+        <label>
+          Unit
+          <select value={unit} onChange={event => setUnit(event.target.value as 'g' | 'ml')}>
+            <option value="g">grams (g)</option>
+            <option value="ml">milliliters (ml)</option>
+          </select>
+        </label>
+      </div>
+      <p className="form-description">Nutrition for ONE serving of {servingSize || '…'} {unit}</p>
+      <div className="manual-food-grid">
+        {([
+          ['Calories', calories, setCalories],
+          ['Protein (g)', protein, setProtein],
+          ['Carbs (g)', carbs, setCarbs],
+          ['Fat (g)', fat, setFat],
+        ] as const).map(([label, value, setter]) => (
+          <label key={label}>
+            {label}
+            <input required type="number" min="0" step="any"
+              inputMode="decimal" value={value}
+              onChange={event => setter(event.target.value)}
+              placeholder="0" />
+          </label>
+        ))}
+      </div>
+      {values.slice(1).every(value => Number.isFinite(value) && value >= 0) && (
+        <div className={caloriesMatch ? 'manual-calorie-match' : 'manual-calorie-error'} role="status">
+          <strong>Calories calculated from macros: {calculatedCalories.toFixed(1)} kcal</strong>
+          <small>Protein × 4 + Carbs × 4 + Fat × 9</small>
+          {!caloriesMatch && Number.isFinite(values[0]) && (
+            <p>
+              Your entered calories differ by {calorieDifference.toFixed(1)} kcal.
+              Adjust the values before adding this food.
+            </p>
+          )}
+          <button type="button" className="settings-button"
+            onClick={() => setCalories(String(Math.round(calculatedCalories * 100) / 100))}>
+            Use calculated calories
+          </button>
+        </div>
+      )}
+      <label>
+        Number of servings
+        <input required type="number" min="0.01" max="1000" step="any"
+          inputMode="decimal" value={servings}
+          onChange={event => setServings(event.target.value)} />
+      </label>
+      {total && (
+        <div className="nutrition-preview" aria-live="polite">
+          <strong>Diary preview</strong>
+          <p>{Math.round(size * count * 100) / 100} {unit} · {Math.round(total.calories)} kcal</p>
+          <p>P {total.protein.toFixed(1)} g · C {total.carbs.toFixed(1)} g · F {total.fat.toFixed(1)} g</p>
+        </div>
+      )}
+      {initialFood ? (
+        <label className="manual-food-checkbox">
+          <input type="checkbox" checked={saveOnly}
+            onChange={event => setSaveOnly(event.target.checked)} />
+          Only update this saved food (do not log a meal)
+        </label>
+      ) : (
+        <label className="manual-food-checkbox">
+          <input type="checkbox" checked={remember}
+            onChange={event => setRemember(event.target.checked)} />
+          Save this custom food to Favorites for next time
+        </label>
+      )}
+      <div className="manual-food-actions">
+        <button type="button" className="settings-button" onClick={onCancel} disabled={disabled}>Cancel</button>
+        <button type="submit" className="save-food-button" disabled={!valid || !caloriesMatch || disabled}>
+          {disabled ? 'Saving…' : initialFood ? (saveOnly ? 'Update Saved Food' : 'Update and Log Food') : 'Add to Food Diary'}
+        </button>
+      </div>
+    </form>
+  )
+}

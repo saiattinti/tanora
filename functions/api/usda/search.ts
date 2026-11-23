@@ -79,8 +79,8 @@ export async function onRequestPost(
       },
       body: JSON.stringify({
         query,
-        pageSize: 100,
-        dataType: ['Foundation', 'SR Legacy'],
+        pageSize: 150,
+        dataType: ['Foundation', 'SR Legacy', 'Survey (FNDDS)'],
       }),
       signal: AbortSignal.timeout(15000),
     })

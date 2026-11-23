@@ -7,6 +7,8 @@ export type USDAFood = {
   protein: number
   carbs: number
   fat: number
+  servingSize?: number
+  unit?: 'g' | 'ml'
 }
 
 type RawNutrient = {
@@ -183,6 +185,9 @@ async function requestUSDA(query: string): Promise<USDAFood[]> {
       // Use the HTTP error when no JSON error is available.
     }
 
+    if (import.meta.env.DEV && response.status === 404) {
+      message = 'Local USDA API unavailable. Run npm run dev:api in another Terminal.'
+    }
     throw new Error(message)
   }
 
@@ -198,6 +203,8 @@ function ranking(food: USDAFood, query: string): number {
   const name = normalized(food.name)
   const words = name.split(' ')
   const requested = q.split(' ').filter(Boolean)
+  const rawRequested = requested.some(term => ['raw', 'uncooked'].includes(term))
+  const cookedRequested = requested.some(term => ['cooked', 'roasted', 'grilled', 'baked', 'boiled'].includes(term))
   const guide = guideFor(query)
 
   let score = 0
@@ -218,9 +225,15 @@ function ranking(food: USDAFood, query: string): number {
     score += words.includes(term) ? 24 : -12
   }
 
-  if (food.source === 'Foundation') {
-    score += 8
-  }
+  if (food.source === 'Foundation') score += 15
+  if (food.source === 'SR Legacy') score += 10
+  if (food.source === 'Survey (FNDDS)') score -= 8
+
+  // Prioritize simple ingredients over packaged and prepared dishes,
+  // unless the user explicitly searches for those foods.
+  const prepared = ['restaurant', 'fast food', 'sandwich', 'nugget', 'casserole', 'breaded']
+  if (prepared.some(term => name.includes(term) && !q.includes(term))) score -= 45
+
 
   score -= Math.max(
     0,
@@ -251,6 +264,9 @@ function ranking(food: USDAFood, query: string): number {
       score += 12
     }
   }
+
+  if (cookedRequested && words.includes('raw')) score -= 55
+  if (rawRequested && words.some(term => ['cooked', 'boiled', 'roasted', 'grilled'].includes(term))) score -= 55
 
   if (
     guide &&

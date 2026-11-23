@@ -182,3 +182,11 @@
     flex-shrink: 0;
   }
 }
+
+
+/* Tanora v1.2: correct missing or inaccurate nutrition records */
+.barcode-edit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.barcode-edit-grid label { display: grid; gap: 7px; min-width: 0; font-size: 12px; }
+.barcode-edit-grid label input { width: 100%; min-width: 0; }
+.barcode-error button { margin-top: 10px; }
+[data-theme='dark'] .barcode-edit-grid label { color: #e1f0e9; }
