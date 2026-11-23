@@ -33,6 +33,7 @@ type Props = {
     nutrition: BarcodeNutrition
   ) => void
   onCancel: () => void
+  onManual: () => void
 }
 
 const scannerId = 'nutrition-barcode-camera'
@@ -44,6 +45,7 @@ function format(number: number): string {
 export default function BarcodeScanner({
   onAdd,
   onCancel,
+  onManual,
 }: Props) {
   const scanner = useRef<Html5Qrcode | null>(null)
   const busy = useRef(false)
@@ -310,9 +312,12 @@ export default function BarcodeScanner({
       </form>
 
       {error && (
-        <p role="alert" className="barcode-error">
-          {error}
-        </p>
+        <div role="alert" className="barcode-error">
+          <p>{error}</p>
+          <button type="button" onClick={onManual}>
+            Enter this food manually
+          </button>
+        </div>
       )}
 
       {product && (
