@@ -232,7 +232,7 @@ export default function Auth({ onTryGuest }: { onTryGuest: () => void }) {
       <main className="auth-page">
         <section className="auth-card">
           <div className="auth-brand">
-            <div className="auth-symbol">N</div>
+            <img className="auth-symbol" src="/tanora-icon.svg" alt="Tanora app icon" />
             <h1>Tanora</h1>
             <p>Your personal nutrition account</p>
           </div>
@@ -299,7 +299,7 @@ export default function Auth({ onTryGuest }: { onTryGuest: () => void }) {
     <main className="auth-page">
       <section className="auth-card">
         <div className="auth-brand">
-          <div className="auth-symbol">N</div>
+          <img className="auth-symbol" src="/tanora-icon.svg" alt="Tanora app icon" />
           <h1>Tanora</h1>
           <p>Smart nutrition, simplified.</p>
         </div>
