@@ -28,3 +28,24 @@ input:focus-visible {
   outline: 3px solid #16a085;
   outline-offset: 2px;
 }
+
+
+.theme-toggle { position: fixed; bottom: max(18px, env(safe-area-inset-bottom)); right: 18px; z-index: 1000; border: 1px solid #cbd6d5; border-radius: 24px; padding: 10px 14px; background: #fff; color: #172b32; box-shadow: 0 4px 18px #0002; font-size: 13px; cursor: pointer; }
+body { padding-bottom: 58px; }
+:root[data-theme='dark'] { background: #10191c; color: #ecf4f2; }
+[data-theme='dark'] body { background: #10191c; color: #ecf4f2; }
+[data-theme='dark'] .theme-toggle { background: #27363a; color: #ecf4f2; border-color: #405258; }
+[data-theme='dark'] .auth-page { background: radial-gradient(circle at 15% 10%, #173c34, transparent 45%), #10191c; color: #ecf4f2; }
+[data-theme='dark'] .auth-card, [data-theme='dark'] .card { background: #1d2b2f; color: #ecf4f2; border-color: #34494d; box-shadow: none; }
+[data-theme='dark'] .auth-brand h1, [data-theme='dark'] .auth-heading h2, [data-theme='dark'] .auth-signed-in .auth-username { color: #ecf4f2; }
+[data-theme='dark'] .auth-field { color: #c5d8d5; }
+[data-theme='dark'] .auth-field input, [data-theme='dark'] .food-search, [data-theme='dark'] .portion-editor input, [data-theme='dark'] .portion-select, [data-theme='dark'] .smart-number-input input, [data-theme='dark'] .smart-entry-row input, [data-theme='dark'] .goal-inputs input, [data-theme='dark'] .barcode-manual input, [data-theme='dark'] .barcode-product input { background: #122126; color: #f1faf7; border-color: #42565c; }
+[data-theme='dark'] .auth-notice, [data-theme='dark'] .auth-secondary, [data-theme='dark'] .auth-guest, [data-theme='dark'] .settings-button, [data-theme='dark'] .diary-actions button, [data-theme='dark'] .smart-reset, [data-theme='dark'] .smart-step-number, [data-theme='dark'] .smart-macro-options button.selected { background: #234c42; color: #8be8c5; }
+[data-theme='dark'] .auth-google, [data-theme='dark'] .date-navigation button, [data-theme='dark'] .more-results-button, [data-theme='dark'] .smart-macro-options button, [data-theme='dark'] .barcode-preview > div { background: #1b2d32; color: #e9f7f2; border-color: #42565c; }
+[data-theme='dark'] .food-result, [data-theme='dark'] .ingredient-pick, [data-theme='dark'] .favorite-button, [data-theme='dark'] .nutrition-preview, [data-theme='dark'] .smart-calorie-box, [data-theme='dark'] .smart-result, [data-theme='dark'] .smart-summary, [data-theme='dark'] .barcode-panel { background: #233438; color: #f0f8f6; border-color: #3a5054; }
+[data-theme='dark'] .food-result:hover, [data-theme='dark'] .food-result.selected, [data-theme='dark'] .ingredient-pick:hover, [data-theme='dark'] .ingredient-pick.chosen { background: #234c42; border-color: #16a085; }
+[data-theme='dark'] .barcode-panel button:not(.barcode-add), [data-theme='dark'] .smart-cancel, [data-theme='dark'] .search-mode-switch button:not(.active) { background: #31464a; color: #d5f4e9; }
+[data-theme='dark'] .barcode-controls button, [data-theme='dark'] .barcode-mode button.selected { background: #139e82; color: white; }
+[data-theme='dark'] .smart-step, [data-theme='dark'] .diary-entry, [data-theme='dark'] .portion-editor, [data-theme='dark'] .barcode-product { border-color: #42565c; }
+[data-theme='dark'] .progress-track.small, [data-theme='dark'] .smart-progress, [data-theme='dark'] .smart-summary-bar { background: #384c50; }
+[data-theme='dark'] .subtitle, [data-theme='dark'] .macro-heading, [data-theme='dark'] .macro-target, [data-theme='dark'] .food-section p, [data-theme='dark'] .form-description, [data-theme='dark'] .ingredient-pick small, [data-theme='dark'] .ingredient-kcal, [data-theme='dark'] .diary-info p, [data-theme='dark'] .diary-info small, [data-theme='dark'] .auth-brand p, [data-theme='dark'] .auth-heading p, [data-theme='dark'] .auth-switch, [data-theme='dark'] .auth-guest-note, [data-theme='dark'] .smart-helper, [data-theme='dark'] .smart-formula, [data-theme='dark'] .barcode-description, [data-theme='dark'] .barcode-disclaimer { color: #a5bdc0; }
