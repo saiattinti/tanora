@@ -6,23 +6,25 @@ import './ManualFood.css'
 type Props = {
   date: string
   disabled: boolean
-  onSave: (food: SavedFood, entry: SavedEntry, remember: boolean) => void
+  onSave: (food: SavedFood, entry: SavedEntry, remember: boolean, saveOnly: boolean) => void
   onCancel: () => void
+  initialFood?: SavedFood
 }
 
 const parseAmount = (value: string): number =>
   value.trim() === '' ? NaN : Number(value)
 
-export default function ManualFood({ date, disabled, onSave, onCancel }: Props) {
-  const [name, setName] = useState('')
-  const [unit, setUnit] = useState<'g' | 'ml'>('g')
-  const [servingSize, setServingSize] = useState('100')
+export default function ManualFood({ date, disabled, onSave, onCancel, initialFood }: Props) {
+  const [name, setName] = useState(initialFood?.name ?? '')
+  const [unit, setUnit] = useState<'g' | 'ml'>(initialFood?.unit ?? 'g')
+  const [servingSize, setServingSize] = useState(String(initialFood?.servingSize ?? 100))
   const [servings, setServings] = useState('1')
-  const [calories, setCalories] = useState('')
-  const [protein, setProtein] = useState('')
-  const [carbs, setCarbs] = useState('')
-  const [fat, setFat] = useState('')
+  const [calories, setCalories] = useState(initialFood ? String(initialFood.calories * (initialFood.servingSize ?? 100) / 100) : '')
+  const [protein, setProtein] = useState(initialFood ? String(initialFood.protein * (initialFood.servingSize ?? 100) / 100) : '')
+  const [carbs, setCarbs] = useState(initialFood ? String(initialFood.carbs * (initialFood.servingSize ?? 100) / 100) : '')
+  const [fat, setFat] = useState(initialFood ? String(initialFood.fat * (initialFood.servingSize ?? 100) / 100) : '')
   const [remember, setRemember] = useState(true)
+  const [saveOnly, setSaveOnly] = useState(Boolean(initialFood))
 
   const size = parseAmount(servingSize)
   const count = parseAmount(servings)
@@ -54,9 +56,11 @@ export default function ManualFood({ date, disabled, onSave, onCancel }: Props) 
     if (!valid || !caloriesMatch || !total || disabled) return
 
     const food: SavedFood = {
-      id: crypto.randomUUID(),
+      id: initialFood?.id ?? crypto.randomUUID(),
       name: name.trim(),
       source: 'Custom food',
+      servingSize: size,
+      unit,
       calories: values[0] * 100 / size,
       protein: values[1] * 100 / size,
       carbs: values[2] * 100 / size,
@@ -73,13 +77,13 @@ export default function ManualFood({ date, disabled, onSave, onCancel }: Props) 
       ...total,
     }
 
-    onSave(food, entry, remember)
+    onSave(food, entry, initialFood ? true : remember, Boolean(initialFood) && saveOnly)
   }
 
   return (
     <form className="manual-food" onSubmit={submit}>
       <p className="form-description">
-        Enter nutrition exactly as it appears on the label, per serving.
+        {initialFood ? 'Update this custom food. Previously logged meals stay unchanged.' : 'Enter nutrition exactly as it appears on the label, per serving.'}
         Fractions such as 0.5 or 1.25 servings are supported.
       </p>
       <label>
@@ -149,15 +153,23 @@ export default function ManualFood({ date, disabled, onSave, onCancel }: Props) 
           <p>P {total.protein.toFixed(1)} g · C {total.carbs.toFixed(1)} g · F {total.fat.toFixed(1)} g</p>
         </div>
       )}
-      <label className="manual-food-checkbox">
-        <input type="checkbox" checked={remember}
-          onChange={event => setRemember(event.target.checked)} />
-        Save this custom food to Favorites for next time
-      </label>
+      {initialFood ? (
+        <label className="manual-food-checkbox">
+          <input type="checkbox" checked={saveOnly}
+            onChange={event => setSaveOnly(event.target.checked)} />
+          Only update this saved food (do not log a meal)
+        </label>
+      ) : (
+        <label className="manual-food-checkbox">
+          <input type="checkbox" checked={remember}
+            onChange={event => setRemember(event.target.checked)} />
+          Save this custom food to Favorites for next time
+        </label>
+      )}
       <div className="manual-food-actions">
         <button type="button" className="settings-button" onClick={onCancel} disabled={disabled}>Cancel</button>
         <button type="submit" className="save-food-button" disabled={!valid || !caloriesMatch || disabled}>
-          {disabled ? 'Saving…' : 'Add to Food Diary'}
+          {disabled ? 'Saving…' : initialFood ? (saveOnly ? 'Update Saved Food' : 'Update and Log Food') : 'Add to Food Diary'}
         </button>
       </div>
     </form>
