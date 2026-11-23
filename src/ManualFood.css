@@ -9,3 +9,12 @@
 .manual-food-actions .save-food-button { flex: 1; margin: 0; }
 [data-theme='dark'] .manual-food input:not([type="checkbox"]), [data-theme='dark'] .manual-food select { background: #122126; color: #f1faf7; border-color: #42565c; }
 @media (max-width:450px) { .manual-food-actions { flex-direction: column-reverse; align-items: stretch; } }
+
+.manual-calorie-match, .manual-calorie-error { display: grid; gap: 7px; border-radius: 12px; padding: 14px; line-height: 1.4; }
+.manual-calorie-match { background: #e7f7f1; color: #087453; }
+.manual-calorie-error { background: #fff0ee; color: #a12c20; }
+.manual-calorie-match small, .manual-calorie-error small { font-size: 12px; }
+.manual-calorie-error p { margin: 0; font-size: 13px; }
+.manual-calorie-match button, .manual-calorie-error button { justify-self: start; }
+[data-theme='dark'] .manual-calorie-match { background: #234c42; color: #9fe8cc; }
+[data-theme='dark'] .manual-calorie-error { background: #532e30; color: #ffc4bb; }
