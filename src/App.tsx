@@ -849,7 +849,10 @@ function App({ userId, userEmail, onSignOut }: Props) {
           <p className="eyebrow">
             TANORA · NUTRITION
           </p>
-          <h1>Nutrition Dashboard</h1>
+          <div className="tanora-heading">
+            <img src="/tanora-icon.svg" alt="" className="tanora-mark" />
+            <h1>Tanora</h1>
+          </div>
           <p className="subtitle">
             Track your daily calories and macros.
           </p>
