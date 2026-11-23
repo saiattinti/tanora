@@ -470,7 +470,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
   const starterMatches = starterFoods.filter(matches)
 
   const portions =
-    selectedFood && editingUnit === 'g'
+    selectedFood && (editingUnit === 'g' || selectedFood.servingSize)
       ? possiblePortions(selectedFood)
       : []
 
@@ -663,6 +663,8 @@ function App({ userId, userEmail, onSignOut }: Props) {
         ? `${product.brand} ${product.name}`
         : product.name,
       source: 'Open Food Facts',
+      servingSize: product.servingSize ?? undefined,
+      unit: product.servingUnit,
       calories: perHundred.calories,
       protein: perHundred.protein,
       carbs: perHundred.carbs,
@@ -1351,7 +1353,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
                       />
 
                       <p className="form-description">
-                        Estimated total: {Math.round(amount)} g
+                        Estimated total: {Math.round(amount)} {editingUnit}
                       </p>
                     </>
                   ) : (
