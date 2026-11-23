@@ -259,3 +259,13 @@
     border-radius: 18px;
   }
 }
+
+
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 22px 0 12px; color: #71848b; font-size: 13px; }
+.auth-divider::before, .auth-divider::after { content: ''; height: 1px; flex: 1; background: #d7e3df; }
+.auth-google, .auth-guest { display: block; width: 100%; border-radius: 11px; padding: 14px; margin-top: 10px; font-size: 15px; font-weight: 700; }
+.auth-google { background: #fff; color: #24343b; border: 1px solid #cfdad8; }
+.auth-google span { font-weight: 850; margin-right: 10px; color: #4285f4; }
+.auth-guest { background: #e9f7f0; color: #087453; }
+.auth-google:disabled, .auth-guest:disabled { opacity: .5; cursor: not-allowed; }
+.auth-guest-note { text-align: center; font-size: 12px; line-height: 1.5; color: #71848b; }
