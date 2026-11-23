@@ -7,6 +7,8 @@ export type USDAFood = {
   protein: number
   carbs: number
   fat: number
+  servingSize?: number
+  unit?: 'g' | 'ml'
 }
 
 type RawNutrient = {
