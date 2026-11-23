@@ -16,6 +16,8 @@ export type SavedFood = {
   protein: number
   carbs: number
   fat: number
+  servingSize?: number
+  unit?: 'g' | 'ml'
 }
 
 export type SavedEntry = NutritionGoals & {
