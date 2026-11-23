@@ -3,11 +3,13 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import App from './App'
 import Auth from './Auth'
+import WorkoutTracker from './WorkoutTracker'
 
 export default function Root() {
   const [session, setSession] = useState<Session | null>(null)
   const [guestMode, setGuestMode] = useState(() => window.sessionStorage.getItem('tanora-guest-session') === 'true')
   const [checking, setChecking] = useState(true)
+  const [section, setSection] = useState<'nutrition' | 'workouts'>('nutrition')
 
   const accountPage =
     new URLSearchParams(window.location.search)
@@ -63,7 +65,14 @@ export default function Root() {
   }
 
   return (
-    <App
+    <>
+      <nav className="tanora-main-nav" aria-label="Tanora sections">
+        <button className={section === 'nutrition' ? 'selected' : ''} type="button" onClick={() => setSection('nutrition')}>🥗 Nutrition</button>
+        <button className={section === 'workouts' ? 'selected' : ''} type="button" onClick={() => setSection('workouts')}>🏋️ Workouts</button>
+      </nav>
+      {section === 'workouts' ? (
+        <WorkoutTracker userId={session?.user.id ?? null} onNutrition={() => setSection('nutrition')} />
+      ) : <App
       key={session?.user.id ?? 'guest'}
       userId={session?.user.id ?? null}
       userEmail={session?.user.email ?? ''}
@@ -81,7 +90,8 @@ export default function Root() {
           setGuestMode(false)
         }
       }}
-    />
+    />}
+    </>
   )
 }
 
