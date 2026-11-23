@@ -37,7 +37,7 @@ type Props = {
   onManual: () => void
 }
 
-const scannerId = 'nutrition-barcode-camera'
+const scannerId = 'tanora-barcode-camera'
 
 function format(number: number): string {
   return Number(number.toFixed(2)).toLocaleString()
