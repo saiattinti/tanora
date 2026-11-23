@@ -311,6 +311,24 @@ function App({ userId, userEmail, onSignOut }: Props) {
     }
   }, [userId, guest])
 
+  // Bring the cloud account up to date when returning from another device.
+  // Guest data never enters this path.
+  useEffect(() => {
+    if (guest || !ready) return
+    const updateWhenVisible = () => {
+      if (document.visibilityState !== 'visible' || busyRef.current) return
+      void refresh().catch(error => setCloudError(
+        error instanceof Error ? error.message : 'Could not refresh cloud data.'
+      ))
+    }
+    document.addEventListener('visibilitychange', updateWhenVisible)
+    window.addEventListener('focus', updateWhenVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', updateWhenVisible)
+      window.removeEventListener('focus', updateWhenVisible)
+    }
+  }, [guest, ready, refresh])
+
   async function performCloudAction(
     action: () => Promise<void>,
     message = ''
@@ -418,13 +436,14 @@ function App({ userId, userEmail, onSignOut }: Props) {
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   )
 
-  const quickLogEntries = [...new Map(
-    entries
-      .slice()
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .filter(entry => Boolean(entry.food))
-      .map(entry => [entry.food!.id, entry] as const)
-  ).values()].slice(0, 5)
+  const quickLogEntries = entries
+    .slice()
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .filter(entry => Boolean(entry.food))
+    .filter((entry, index, list) =>
+      list.findIndex(item => item.food?.id === entry.food?.id) === index
+    )
+    .slice(0, 5)
 
   const recentFoods = uniqueFoods(
     entries
