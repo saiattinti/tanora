@@ -1101,6 +1101,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
                   addMode === 'ingredients' ? 'active' : ''
                 }
                 onClick={() => {
+                  setEditingCustomFood(null)
                   setAddMode('ingredients')
                   clearSearch()
                 }}
@@ -1114,6 +1115,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
                   addMode === 'barcode' ? 'active' : ''
                 }
                 onClick={() => {
+                  setEditingCustomFood(null)
                   clearSearch()
                   setAddMode('barcode')
                 }}
@@ -1124,6 +1126,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
                 type="button"
                 className={addMode === 'manual' ? 'active' : ''}
                 onClick={() => {
+                  setEditingCustomFood(null)
                   clearSearch()
                   setAddMode('manual')
                 }}
