@@ -9,9 +9,13 @@ type Context = {
 
 type Nutriments = {
   'energy-kcal_100g'?: number
+  'energy-kcal_100ml'?: number
   proteins_100g?: number
+  proteins_100ml?: number
   carbohydrates_100g?: number
+  carbohydrates_100ml?: number
   fat_100g?: number
+  fat_100ml?: number
 }
 
 type Product = {
@@ -60,7 +64,7 @@ export async function onRequestGet({
     const response = await fetch(url.toString(), {
       headers: {
         'User-Agent':
-          'PersonalNutritionTracker/1.0 (https://personal-nutrition-tracker-5a0.pages.dev)',
+          'Tanora/1.2 (https://personal-nutrition-tracker-5a0.pages.dev)',
       },
       signal: AbortSignal.timeout(15000),
     })
@@ -81,10 +85,15 @@ export async function onRequestGet({
     const product = data.product
     const n = product.nutriments ?? {}
 
-    const calories = n['energy-kcal_100g']
-    const protein = n.proteins_100g
-    const carbs = n.carbohydrates_100g
-    const fat = n.fat_100g
+    const servingText = product.serving_size ?? ''
+    const volumeBased =
+      product.nutrition_data_per === '100ml' ||
+      /\bml\b/i.test(servingText)
+    // Never substitute gram-based figures for milliliter-based ones.
+    const calories = volumeBased ? n['energy-kcal_100ml'] : n['energy-kcal_100g']
+    const protein = volumeBased ? n.proteins_100ml : n.proteins_100g
+    const carbs = volumeBased ? n.carbohydrates_100ml : n.carbohydrates_100g
+    const fat = volumeBased ? n.fat_100ml : n.fat_100g
 
     // Return incomplete records to the client so a user can complete them
     // from the product label. Missing fields stay null, never fabricated as zero.
@@ -94,13 +103,8 @@ export async function onRequestGet({
 
 
     const servingQuantity = product.serving_quantity
-    const servingText = product.serving_size ?? ''
 
-    // The standardized nutrition values are per 100 g or 100 ml.
-    // Do not equate ml with grams without a known density.
-    const volumeBased =
-      product.nutrition_data_per === '100ml' ||
-      /\bml\b/i.test(servingText)
+    // Nutrition data is per 100 g or per 100 ml, depending on the source.
 
     const servingUnit = volumeBased ? 'ml' : 'g'
     const servingSize =
