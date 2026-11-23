@@ -646,3 +646,12 @@ button {
 
 
 
+
+
+/* v1.2 manual logging tab and repeat actions */
+.search-mode-switch { flex-wrap: wrap; }
+.search-mode-switch button { flex: 1 1 130px; }
+.diary-actions { flex-wrap: wrap; }
+@media (max-width: 600px) {
+  .search-mode-switch button { flex: 1 1 105px; }
+}
