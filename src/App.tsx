@@ -607,7 +607,8 @@ function App({ userId, userEmail, onSignOut }: Props) {
   async function addBarcodeFood(
     product: BarcodeProduct,
     portionAmount: number,
-    nutrition: BarcodeNutrition
+    nutrition: BarcodeNutrition,
+    perHundred: BarcodeNutrition
   ) {
     if (busy) return
 
@@ -617,10 +618,10 @@ function App({ userId, userEmail, onSignOut }: Props) {
         ? `${product.brand} ${product.name}`
         : product.name,
       source: 'Open Food Facts',
-      calories: product.calories,
-      protein: product.protein,
-      carbs: product.carbs,
-      fat: product.fat,
+      calories: perHundred.calories,
+      protein: perHundred.protein,
+      carbs: perHundred.carbs,
+      fat: perHundred.fat,
     }
 
     await saveEntry({
@@ -1060,12 +1061,14 @@ function App({ userId, userEmail, onSignOut }: Props) {
               onAdd={(
                 product,
                 portionAmount,
-                nutrition
+                nutrition,
+                perHundred
               ) => {
                 void addBarcodeFood(
                   product,
                   portionAmount,
-                  nutrition
+                  nutrition,
+                  perHundred
                 )
               }}
               onCancel={() => setAddMode('ingredients')}
