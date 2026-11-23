@@ -10,7 +10,7 @@ type Screen = 'login' | 'signup' | 'forgot' | 'update'
 const APP_URL =
   'https://personal-nutrition-tracker-5a0.pages.dev'
 
-export default function Auth() {
+export default function Auth({ onTryGuest }: { onTryGuest: () => void }) {
   const [screen, setScreen] = useState<Screen>('login')
   const [session, setSession] = useState<Session | null>(null)
   const [checking, setChecking] = useState(true)
@@ -175,6 +175,20 @@ export default function Auth() {
     }
   }
 
+  async function loginWithGoogle() {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/' },
+    })
+    if (oauthError) {
+      setError(oauthError.message)
+      setBusy(false)
+    }
+  }
+
   async function logout() {
     if (busy) return
 
@@ -232,11 +246,10 @@ export default function Auth() {
           </div>
 
           <div className="auth-notice">
-            <strong>Cloud syncing is our next step.</strong>
+            <strong>Your nutrition data syncs to your account.</strong>
             <p>
-              Your account works, but food diary entries and
-              goals are not yet connected to Supabase.
-              Do not invite other users until we finish that.
+              Open your dashboard to track food, set macro goals,
+              and save your nutrition history.
             </p>
           </div>
 
@@ -276,7 +289,7 @@ export default function Auth() {
 
   const description =
     screen === 'signup'
-      ? 'Create an account to prepare for cloud syncing.'
+      ? 'Create an account to save and sync your food diary.'
       : screen === 'forgot'
         ? 'Enter your email to request a reset link.'
         : screen === 'update'
@@ -409,6 +422,32 @@ export default function Auth() {
           </button>
         </form>
 
+        {(screen === 'login' || screen === 'signup') && (
+          <>
+            <div className="auth-divider"><span>or</span></div>
+            <button
+              type="button"
+              className="auth-google"
+              disabled={busy}
+              onClick={() => void loginWithGoogle()}
+            >
+              <span aria-hidden="true">G</span> Continue with Google
+            </button>
+            <button
+              type="button"
+              className="auth-guest"
+              disabled={busy}
+              onClick={onTryGuest}
+            >
+              Continue as Guest
+            </button>
+            <p className="auth-guest-note">
+              Guest meals and macro goals stay in this browser only.
+              They are not synced to your account.
+            </p>
+          </>
+        )}
+
         {screen === 'login' ? (
           <p className="auth-switch">
             Don't have an account?{' '}
@@ -431,7 +470,7 @@ export default function Auth() {
         )}
 
         <a className="auth-back" href="/">
-          Return to existing nutrition tracker
+          Nutrition Tracker home
         </a>
       </section>
     </main>
