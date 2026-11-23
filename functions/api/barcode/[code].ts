@@ -86,19 +86,12 @@ export async function onRequestGet({
     const carbs = n.carbohydrates_100g
     const fat = n.fat_100g
 
-    if (
-      ![calories, protein, carbs, fat].every(
-        value =>
-          typeof value === 'number' &&
-          Number.isFinite(value) &&
-          value >= 0
-      )
-    ) {
-      return reply({
-        error:
-          'This product was found, but its calorie or macro data is incomplete.',
-      }, 422)
-    }
+    // Return incomplete records to the client so a user can complete them
+    // from the product label. Missing fields stay null, never fabricated as zero.
+    const checked = (value: unknown): number | null =>
+      typeof value === 'number' && Number.isFinite(value) &&
+      value >= 0 ? value : null
+
 
     const servingQuantity = product.serving_quantity
     const servingText = product.serving_size ?? ''
@@ -122,10 +115,10 @@ export async function onRequestGet({
       name: product.product_name?.trim() ||
         `Product ${code}`,
       brand: product.brands?.trim() || '',
-      calories,
-      protein,
-      carbs,
-      fat,
+      calories: checked(calories),
+      protein: checked(protein),
+      carbs: checked(carbs),
+      fat: checked(fat),
       servingSize,
       servingUnit,
       servingDescription: servingText,
