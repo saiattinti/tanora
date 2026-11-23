@@ -34,7 +34,15 @@ export default function ManualFood({ date, disabled, onSave, onCancel }: Props) 
     size * count <= 100000 &&
     values.every(value => Number.isFinite(value) && value >= 0 && value <= 100000)
 
-  const total = valid ? {
+  // Manual entries require calorie consistency with the 4/4/9 macro formula.
+  // A 1 kcal allowance accommodates decimal entry rounding only.
+  const calculatedCalories = values[1] * 4 + values[2] * 4 + values[3] * 9
+  const calorieDifference = Number.isFinite(values[0]) && Number.isFinite(calculatedCalories)
+    ? Math.abs(values[0] - calculatedCalories)
+    : NaN
+  const caloriesMatch = Number.isFinite(calorieDifference) && calorieDifference <= 1
+
+  const total = valid && caloriesMatch ? {
     calories: values[0] * count,
     protein: values[1] * count,
     carbs: values[2] * count,
@@ -43,7 +51,7 @@ export default function ManualFood({ date, disabled, onSave, onCancel }: Props) 
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!valid || !total || disabled) return
+    if (!valid || !caloriesMatch || !total || disabled) return
 
     const food: SavedFood = {
       id: crypto.randomUUID(),
@@ -112,6 +120,22 @@ export default function ManualFood({ date, disabled, onSave, onCancel }: Props) 
           </label>
         ))}
       </div>
+      {values.slice(1).every(value => Number.isFinite(value) && value >= 0) && (
+        <div className={caloriesMatch ? 'manual-calorie-match' : 'manual-calorie-error'} role="status">
+          <strong>Calories calculated from macros: {calculatedCalories.toFixed(1)} kcal</strong>
+          <small>Protein × 4 + Carbs × 4 + Fat × 9</small>
+          {!caloriesMatch && Number.isFinite(values[0]) && (
+            <p>
+              Your entered calories differ by {calorieDifference.toFixed(1)} kcal.
+              Adjust the values before adding this food.
+            </p>
+          )}
+          <button type="button" className="settings-button"
+            onClick={() => setCalories(String(Math.round(calculatedCalories * 100) / 100))}>
+            Use calculated calories
+          </button>
+        </div>
+      )}
       <label>
         Number of servings
         <input required type="number" min="0.01" max="1000" step="any"
@@ -132,7 +156,7 @@ export default function ManualFood({ date, disabled, onSave, onCancel }: Props) 
       </label>
       <div className="manual-food-actions">
         <button type="button" className="settings-button" onClick={onCancel} disabled={disabled}>Cancel</button>
-        <button type="submit" className="save-food-button" disabled={!valid || disabled}>
+        <button type="submit" className="save-food-button" disabled={!valid || !caloriesMatch || disabled}>
           {disabled ? 'Saving…' : 'Add to Food Diary'}
         </button>
       </div>
