@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { bestWeight, completedSets, exerciseLibrary, totalVolume } from './lib/workoutTypes'
 import type { Exercise, WorkoutData, WorkoutExercise, WorkoutSession } from './lib/workoutTypes'
 import { loadWorkoutData, saveWorkoutData } from './lib/workoutStorage'
+import { repdbImage } from './lib/repdbImages'
 import './WorkoutTracker.css'
 
 type View = 'log' | 'routines' | 'history' | 'progress'
@@ -186,8 +187,9 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
               setActive(previous => previous && ({ ...previous, exercises: [...previous.exercises, makeExercise(e)] }))
               setShowLibrary(false)
             }}><span className="workout-exercise-thumb">
-                {['barbell-bench-press','incline-dumbbell-press','barbell-row','dumbbell-lateral-raise'].includes(e.id) ? <img src={'/exercises/' + e.id + '.webp'} alt={e.name + ' movement demonstration'} loading="lazy" onError={event => { event.currentTarget.style.display = 'none' }} /> : <span aria-hidden="true">🏋️</span>}
+                {repdbImage(e.id) ? <img src={repdbImage(e.id)!} alt={e.name + ' starting position, illustration by RepDB'} loading="lazy" onError={event => { event.currentTarget.style.display = 'none' }} /> : <span aria-hidden="true" className="workout-no-art">EX</span>}
               </span><span className="workout-exercise-name">{e.name}<small>{e.muscle} · {e.equipment}</small></span><span className="workout-add-sign" aria-hidden="true">+</span></button>)}</div>
+            <a className="repdb-credit" href="https://repdb.co" target="_blank" rel="noopener noreferrer">Exercise data by RepDB (repdb.co)</a>
           </div>}
           <label className="workout-notes">Notes<textarea maxLength={1000} rows={2} value={active.notes} onChange={e => setActive({ ...active, notes: e.target.value })} placeholder="How did it feel?"/></label>
           <div className="workout-actions"><button className="workout-primary" disabled={busy || active.exercises.length === 0} type="button" onClick={() => void finishWorkout()}>Finish & save workout</button>
