@@ -1,6 +1,6 @@
 # Tanora Beta 2.1 | Quality of Life Update
 
-Status: APPROVED SCOPE, IMPLEMENTATION NOT STARTED
+Status: PHASE 1 (BETA 2.1.1) CODE COMMITTED, NOT YET TESTED. PHASES 2–4 NOT STARTED.
 Base release: `v2.0.0-beta` (`main` as of branch creation)
 Development branch: `feature/beta-v2.1-quality-of-life`
 
@@ -33,6 +33,8 @@ Do not silently remove, replace, or expand this scope. Treat the plan below as a
 - Avoid asking users to enter credentials or API keys in chat.
 
 ## Phase 1 | Workout logging convenience (features 2, 3, 4, 5)
+
+Implementation checkpoint: See `BETA_V2.1.1_TESTING.md`. Changes are committed on the 2.1 development branch. Lint, build, local tests and iPhone preview remain required. Never treat this as a production release.
 
 **Auto-fill previous weights/reps**
 - On adding an exercise or starting a routine, optionally prefill the most recent logged completed sets for the same exercise ID.
