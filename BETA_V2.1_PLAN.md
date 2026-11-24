@@ -1,6 +1,6 @@
 # Tanora Beta 2.1 | Quality of Life Update
 
-Status: PHASE 1 (BETA 2.1.1) LOCALLY USER-TESTED; PHASE 2 (BETA 2.1.2) CODE COMMITTED BUT LINT/BUILD AND DEVICE TESTS PENDING. PHASES 3–4 NOT STARTED.
+Status: PHASE 1 (BETA 2.1.1) LOCALLY USER-TESTED; PHASE 2 (BETA 2.1.2) LINT/BUILD PASSED, FEATURE TESTS PENDING; PHASE 3 (BETA 2.1.3) CODE COMMITTED, TESTS AND ADDITIVE SQL MIGRATION PENDING. PHASE 4 NOT STARTED.
 Base release: `v2.0.0-beta` (`main` as of branch creation)
 Development branch: `feature/beta-v2.1-quality-of-life`
 
@@ -82,6 +82,8 @@ Implementation checkpoint: See `BETA_V2.1.2_TESTING.md` for the three gym-utilit
 Acceptance: timer accurate after app is backgrounded; plate calculator results are symmetric and honor inventory; switching units does not alter recorded physical loads.
 
 ## Phase 3 | Nutrition convenience (features 6, 7, 11)
+
+Implementation checkpoint: See `BETA_V2.1.3_TESTING.md` for saved meals, recipes, timestamps, and the separate additive Supabase migration. Code is committed on the development branch only; no migration has been applied and production is unchanged.
 
 **Saved meals**
 - A named, reusable group of ingredients/foods with individual measured quantities.
