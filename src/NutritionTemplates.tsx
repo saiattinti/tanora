@@ -45,7 +45,7 @@ export default function NutritionTemplates({
   const [expanded,setExpanded]=useState(false)
   const [mealTime,setMealTime]=useState(localClock)
   const [mealTimeEdited,setMealTimeEdited]=useState(false)
-  const logTime=()=>mealTimeEdited?mealTime:localClock()
+  const logTime=()=>mealTimeEdited && mealTime ? mealTime : localClock()
   const [editingOpen,setEditingOpen]=useState(false)
   const existing=kind==='meal'?meals:recipes
   const totals=items.length?portionMacros(items):zero
