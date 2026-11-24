@@ -44,6 +44,8 @@ export default function NutritionTemplates({
   const [recipeMode,setRecipeMode]=useState<Record<string,'grams'|'servings'>>({})
   const [expanded,setExpanded]=useState(false)
   const [mealTime,setMealTime]=useState(localClock)
+  const [mealTimeEdited,setMealTimeEdited]=useState(false)
+  const logTime=()=>mealTimeEdited?mealTime:localClock()
   const [editingOpen,setEditingOpen]=useState(false)
   const existing=kind==='meal'?meals:recipes
   const totals=items.length?portionMacros(items):zero
@@ -95,7 +97,7 @@ export default function NutritionTemplates({
   async function logMeal(meal:SavedMeal){
     const factor=Number(multiplier[meal.id]??'1')
     if(!Number.isFinite(factor)||factor<=0||factor>100){setError('Enter a multiplier greater than zero.');return}
-    const at=instantFor(date,mealTime)
+    const at=instantFor(date,logTime())
     const entries:SavedEntry[]=meal.items.map(part=>{
       const amount=part.amount*factor
       return {id:crypto.randomUUID(),name:part.food.name,grams:amount,date,eatenAt:at,unit:part.food.unit??'g',
@@ -113,18 +115,18 @@ export default function NutritionTemplates({
     const per100=scaleMacros(batch,100/recipe.yieldGrams)
     const food:SavedFood={id:'recipe-'+recipe.id,name:recipe.name,source:'Tanora recipe',
       unit:'g',servingSize:recipe.yieldGrams/recipe.portions,...per100}
-    const entry:SavedEntry={id:crypto.randomUUID(),name:food.name,date,eatenAt:instantFor(date,mealTime),
+    const entry:SavedEntry={id:crypto.randomUUID(),name:food.name,date,eatenAt:instantFor(date,logTime()),
       grams,unit:'g',food,...scaleMacros(per100,grams/100)}
     if(await onLogRecipe(entry))setError('')
   }
 
   return <section className="card template-section">
     <div className="template-heading"><div><h2>Saved Meals & Recipes</h2><p className="form-description">Build once, log again. Recipes calculate nutrition from cooked yield.</p></div>
-      <button type="button" className="add-button" onClick={()=>{if(!expanded)setMealTime(localClock());setExpanded(!expanded)}}>{expanded?'Hide':'Open'}</button></div>
+      <button type="button" className="add-button" onClick={()=>{if(!expanded){setMealTime(localClock());setMealTimeEdited(false)}setExpanded(!expanded)}}>{expanded?'Hide':'Open'}</button></div>
     {expanded&&<>
       <label className="template-logtime">Log time (local)
-        <input type="time" value={mealTime} onChange={e=>setMealTime(e.target.value)}/>
-        <small>Defaults to the current time when opened. Change it to log an earlier meal.</small>
+        <input type="time" value={mealTime} onChange={e=>{setMealTime(e.target.value);setMealTimeEdited(true)}}/>
+        <small>Defaults to the time you log the meal. Change it to log an earlier meal.</small>
       </label>
       <div className="template-tabs">
         <button type="button" className={kind==='meal'?'selected':''} onClick={()=>{setKind('meal');reset()}}>Saved Meals ({meals.length})</button>
