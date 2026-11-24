@@ -255,7 +255,7 @@ export function completedSets(session: WorkoutSession): number {
 export function bestWeight(sessions: WorkoutSession[], exerciseId: string): number {
   return Math.max(0, ...sessions.flatMap(session => session.exercises
     .filter(item => item.exercise.id === exerciseId)
-    .flatMap(item => item.sets.filter(set => set.completed && isWorkingSet(t)).map(set => set.weight))))
+    .flatMap(item => item.sets.filter(set => set.completed && isWorkingSet(set)).map(set => set.weight))))
 }
 
 export function validWorkoutData(value: unknown): value is WorkoutData {
