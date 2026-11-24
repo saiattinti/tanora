@@ -220,6 +220,8 @@ function App({ userId, userEmail, onSignOut }: Props) {
   const [templates, setTemplates] = useState<Templates>({meals:[],recipes:[]})
   const [templateError, setTemplateError] = useState('')
   const [logClock, setLogClock] = useState(localClock)
+  const [timeManuallySet, setTimeManuallySet] = useState(false)
+  const actualLogClock = () => timeManuallySet ? logClock : localClock()
 
   const [ready, setReady] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -531,6 +533,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
     setPortionMode('grams')
     setQuantity('1')
     setLogClock(localClock())
+    setTimeManuallySet(false)
   }
 
   async function performSearch() {
@@ -653,7 +656,8 @@ function App({ userId, userEmail, onSignOut }: Props) {
   }
 
   async function saveManualFood(food: Food, entry: Entry, remember: boolean, saveOnly: boolean) {
-    entry = {...entry, eatenAt: logClock ? instantFor(entry.date, logClock) : null}
+    const chosenTime = actualLogClock()
+    entry = {...entry, eatenAt: chosenTime ? instantFor(entry.date, chosenTime) : null}
     const nextFavorites = remember
       ? uniqueFoods([...favorites.filter(item => item.id !== food.id), food])
       : favorites
@@ -702,7 +706,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
       name: selectedFood.name,
       grams: amount,
       date: selectedDate,
-      eatenAt: logClock ? instantFor(selectedDate, logClock) : null,
+      eatenAt: actualLogClock() ? instantFor(selectedDate, actualLogClock()) : null,
       food: selectedFood,
       unit: editingUnit,
       ...preview,
@@ -737,7 +741,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
       id: crypto.randomUUID(),
       name: food.name,
       date: selectedDate,
-      eatenAt: logClock ? instantFor(selectedDate, logClock) : null,
+      eatenAt: actualLogClock() ? instantFor(selectedDate, actualLogClock()) : null,
       grams: portionAmount,
       unit: product.servingUnit,
       food,
@@ -776,6 +780,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
     setEditingUnit(entry.unit ?? 'g')
     setEditingId(entry.id)
     setLogClock(entry.eatenAt ? timeFromInstant(entry.eatenAt) : '')
+    setTimeManuallySet(true)
     setEditingCustomFood(null)
     setSearchMode('ingredients')
     setAddingFood(true)
@@ -1124,7 +1129,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
           className="add-button"
           disabled={busy}
           onClick={() =>
-            addingFood ? closeFood() : (setLogClock(localClock()),setAddingFood(true))
+            addingFood ? closeFood() : (setLogClock(localClock()),setTimeManuallySet(false),setAddingFood(true))
           }
         >
           {addingFood ? 'Cancel' : '+ Add Food'}
@@ -1174,8 +1179,8 @@ function App({ userId, userEmail, onSignOut }: Props) {
         <section className="card food-form">
           <h2>{editingId ? 'Edit Food' : 'Add Food'}</h2>
           <label className="diary-time-picker">Time eaten (local time)
-            <input type="time" value={logClock} onChange={event => setLogClock(event.target.value)}/>
-            <small>{logClock ? 'Defaults to the current time. Change it for earlier meals.' : 'Blank means time not recorded.'}</small>
+            <input type="time" value={logClock} onChange={event => {setLogClock(event.target.value);setTimeManuallySet(true)}}/>
+            <small>{logClock ? 'Defaults to the time you save the food. Change it for earlier meals.' : 'Blank means time not recorded.'}</small>
           </label>
 
           {!editingId && (
