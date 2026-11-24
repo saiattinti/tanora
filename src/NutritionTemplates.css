@@ -17,3 +17,6 @@
 [data-theme='dark'] .template-section input,[data-theme='dark'] .template-section select{background:#122126;color:#f1faf7;border-color:#42565c}
 [data-theme='dark'] .template-food-picks button,[data-theme='dark'] .template-tabs button:not(.selected){background:#283d3b;color:#d5f4e9}
 @media(max-width:600px){.template-heading{align-items:flex-start}.template-search{flex-wrap:wrap}.template-ingredient{grid-template-columns:minmax(0,1fr) 105px}.template-ingredient .delete-button{grid-column:2}.template-double{grid-template-columns:1fr}}
+
+.template-logtime{display:grid;gap:7px;font-size:12px;font-weight:600;max-width:260px;margin:8px 0 14px}
+.template-logtime small{font-weight:400;color:#819c98;line-height:1.4}
