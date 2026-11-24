@@ -1,0 +1,19 @@
+.template-section{margin:16px 0}.template-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}.template-heading h2{margin:0 0 6px}
+.template-tabs{display:flex;gap:8px;margin:12px 0}.template-tabs button{flex:1;padding:11px;border-radius:9px;background:#e6efed;color:#28594f}.template-tabs button.selected{background:#16a085;color:white}
+.template-editor{border:1px solid #b9d8ce;padding:15px;border-radius:12px;margin:15px 0;display:grid;gap:12px}
+.template-editor label,.template-amount label{display:grid;gap:6px;font-size:12px;font-weight:600}
+.template-section input,.template-section select{min-width:0;width:100%;padding:10px;border:1px solid #cbded8;border-radius:9px;background:white;color:#172b32;font:inherit}
+.template-search{display:flex;align-items:center;gap:9px}.template-search input{flex:1}.template-food-picks{max-height:170px;overflow:auto;display:grid;gap:5px}
+.template-food-picks button{padding:9px;text-align:left;border-radius:7px;background:#e6f5ef;color:#087f5b}.template-food-picks small{font-size:11px}
+.template-ingredient{display:grid;grid-template-columns:minmax(0,1fr) 120px auto;align-items:end;gap:8px;border-bottom:1px solid #dce8e4;padding:8px 0}.template-ingredient>span{font-size:13px}.template-ingredient>small{display:none}
+.template-double{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.template-macros{font-size:12px;color:#508b78;margin:6px 0}
+.template-buttons{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.template-saved{border-top:1px solid #dce8e4;padding:16px 0;display:grid;gap:9px}
+.template-saved small{color:#87a29a;font-size:11px}
+.template-amount{display:flex;align-items:end;gap:8px}.template-amount input{max-width:100px}.template-amount select{max-width:145px}
+.template-section .delete-button{padding:8px 10px;border-radius:8px}
+[data-theme='dark'] .template-editor,[data-theme='dark'] .template-ingredient,[data-theme='dark'] .template-saved{border-color:#42565c}
+[data-theme='dark'] .template-section input,[data-theme='dark'] .template-section select{background:#122126;color:#f1faf7;border-color:#42565c}
+[data-theme='dark'] .template-food-picks button,[data-theme='dark'] .template-tabs button:not(.selected){background:#283d3b;color:#d5f4e9}
+@media(max-width:600px){.template-heading{align-items:flex-start}.template-search{flex-wrap:wrap}.template-ingredient{grid-template-columns:minmax(0,1fr) 105px}.template-ingredient .delete-button{grid-column:2}.template-double{grid-template-columns:1fr}}
