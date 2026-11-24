@@ -9,7 +9,7 @@ This work belongs on `feature/beta-v2.0-workout-tracker`. Keep the current Beta 
 ## Included in this first implementation
 
 - A new Nutrition / Workouts navigation bar
-- Searchable exercise library with muscle and equipment filters
+- Searchable 177-exercise library with muscle and equipment filters across chest, back, shoulders, legs, arms, core and cardio
 - Workout sets (weight in pounds, reps, completed checkbox), workout notes, and date
 - Create and reuse workout routines from a prepared workout
 - Workout history with set detail and delete confirmation
@@ -18,7 +18,7 @@ This work belongs on `feature/beta-v2.0-workout-tracker`. Keep the current Beta 
 - A link between the workout and nutrition dashboards
 - Workout cloud storage under the existing Supabase login, and browser-only guest workout storage
 
-**Scope still needing refinement before a release:** a richer exercise catalog and custom exercises; rest timer; workout editing; support for kg; performance improvements; better handling of interrupted in-progress workouts; deeper nutrition/workout analytics. Current workout history is keyed to a dedicated JSONB document per account and is not yet intended for large, concurrent multi-device editing.
+**Exercise artwork:** Four original demonstration illustrations have been prepared in a separate starter asset pack for Barbell Bench Press, Incline Dumbbell Press, Barbell Row, and Dumbbell Lateral Raise. To preview them, copy the asset pack's `public/exercises/` contents into the local app's `public/exercises/`. Artwork for the remaining catalog entries has **not yet been created or committed**. The UI uses fallback icons for the others. Movement illustrations should be reviewed for accuracy before being described as form guidance.\n\n**Scope still needing refinement before a release:** a richer exercise catalog and custom exercises; rest timer; workout editing; support for kg; performance improvements; better handling of interrupted in-progress workouts; deeper nutrition/workout analytics. Current workout history is keyed to a dedicated JSONB document per account and is not yet intended for large, concurrent multi-device editing.
 
 ## Database setup before signed-in testing
 
