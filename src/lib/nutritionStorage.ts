@@ -25,6 +25,7 @@ export type SavedEntry = NutritionGoals & {
   name: string
   grams: number
   date: string
+  eatenAt?: string | null
   unit?: 'g' | 'ml'
   food?: SavedFood
 }
@@ -70,7 +71,7 @@ export async function loadNutritionData(
     supabase
       .from('food_entries')
       .select(
-        'id, date, name, grams, unit, calories, protein, carbs, fat, food'
+        'id, date, eaten_at, name, grams, unit, calories, protein, carbs, fat, food'
       )
       .eq('user_id', userId)
       .order('date', { ascending: false })
@@ -93,6 +94,7 @@ export async function loadNutritionData(
   ).map(row => ({
     id: row.id as string,
     date: row.date as string,
+    eatenAt: row.eaten_at as string | null,
     name: row.name as string,
     grams: Number(row.grams),
     unit: row.unit as 'g' | 'ml',
@@ -159,6 +161,7 @@ export async function saveCloudEntry(
         id: row.id,
         user_id: row.user_id,
         date: row.date,
+        eaten_at: row.eatenAt ?? null,
         name: row.name,
         grams: row.grams,
         unit: row.unit ?? 'g',
