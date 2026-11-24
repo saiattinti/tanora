@@ -1136,7 +1136,6 @@ function App({ userId, userEmail, onSignOut }: Props) {
         recipes={templates.recipes}
         availableFoods={uniqueFoods([...favorites,...entries.map(entry=>entry.food).filter((food):food is Food=>Boolean(food)),...starterFoods])}
         date={selectedDate}
-        time={logClock || localClock()}
         busy={busy}
         onSaveMeal={saveTemplateMeal}
         onSaveRecipe={saveTemplateRecipe}
