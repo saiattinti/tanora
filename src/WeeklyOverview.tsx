@@ -32,7 +32,7 @@ function lastSevenDays(): {date:string,label:string}[] {
   })
 }
 
-export function summarizeWeek(entries:SavedEntry[],history:WorkoutSession[],dates:{date:string,label:string}[]):WeekDay[] {
+function summarizeWeek(entries:SavedEntry[],history:WorkoutSession[],dates:{date:string,label:string}[]):WeekDay[] {
   return dates.map(day=>{
     const foods=entries.filter(entry=>entry.date===day.date)
     const workouts=history.filter(session=>session.date===day.date)
