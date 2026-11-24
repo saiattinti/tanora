@@ -10,6 +10,43 @@ const dateToday = () => {
   const d = new Date()
   return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
 }
+// Keep the entered text while editing so users can clear zero and type decimals.
+function SetNumberInput({ value, label, step, onValueChange }: {
+  value: number
+  label: string
+  step: string
+  onValueChange: (next: number) => void
+}) {
+  const [text, setText] = useState(String(value))
+  const [focused, setFocused] = useState(false)
+  useEffect(() => { if (!focused) setText(String(value)) }, [value, focused])
+  return <input
+    aria-label={label}
+    type="number"
+    inputMode={step === '1' ? 'numeric' : 'decimal'}
+    min="0"
+    step={step}
+    placeholder="0"
+    value={focused ? text : value === 0 ? '' : String(value)}
+    onFocus={event => { setFocused(true); setText(String(value)); event.currentTarget.select() }}
+    onChange={event => {
+      const next = event.target.value
+      setText(next)
+      if (next.trim() !== '' && Number.isFinite(Number(next)) && Number(next) >= 0) {
+        onValueChange(Number(next))
+      }
+    }}
+    onBlur={() => {
+      setFocused(false)
+      const parsed = Number(text)
+      const valid = text.trim() !== '' && Number.isFinite(parsed) && parsed >= 0 && (step !== '1' || Number.isInteger(parsed))
+      const next = valid ? parsed : 0
+      onValueChange(next)
+      setText(String(next))
+    }}
+  />
+}
+
 const newSet = () => ({ id: crypto.randomUUID(), reps: 8, weight: 0, completed: false })
 const makeExercise = (exercise: Exercise): WorkoutExercise => ({ exercise, sets: [newSet(), newSet(), newSet()] })
 const newSession = (): WorkoutSession => ({
@@ -29,6 +66,7 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
   const [muscle, setMuscle] = useState('All')
   const [equipment, setEquipment] = useState('All')
   const [showLibrary, setShowLibrary] = useState(false)
+  const [routineDraft, setRoutineDraft] = useState<{ name: string, exercises: Exercise[] } | null>(null)
   const [selectedProgressId, setSelectedProgressId] = useState('')
 
   useEffect(() => {
@@ -134,6 +172,33 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
     }, 'Routine saved. You can reuse it anytime.')
   }
 
+  async function saveNewRoutine() {
+    if (!routineDraft) return
+    const name = routineDraft.name.trim()
+    if (!name) { setError('Enter a routine name.'); return }
+    if (!routineDraft.exercises.length) { setError('Add at least one exercise to the routine.'); return }
+    const saved = await persist({
+      ...data,
+      routines: [...data.routines, {
+        id: crypto.randomUUID(), name, exercises: routineDraft.exercises,
+      }],
+    }, 'Routine created. Ready to use in your next workout.')
+    if (saved) setRoutineDraft(null)
+  }
+
+  async function saveHistoryAsRoutine(session: WorkoutSession) {
+    const chosen = window.prompt('Name for this routine:', session.name)
+    if (chosen === null) return
+    const name = chosen.trim()
+    if (!name) { setError('Enter a routine name.'); return }
+    const exercises = session.exercises.map(item => item.exercise)
+    if (!exercises.length) { setError('That workout has no exercises.'); return }
+    await persist({
+      ...data,
+      routines: [...data.routines, { id: crypto.randomUUID(), name, exercises }],
+    }, 'Workout saved as a reusable routine.')
+  }
+
   const history = [...data.history].sort((a, b) => b.date.localeCompare(a.date))
   const totalSets = history.reduce((sum, s) => sum + completedSets(s), 0)
   const volume = history.reduce((sum, s) => sum + totalVolume(s), 0)
@@ -170,8 +235,8 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
             <div className="workout-set-header"><span>Set</span><span>lb</span><span>Reps</span><span>Done</span><span></span></div>
             {item.sets.map((set, j) => <div className="workout-set" key={set.id}>
               <span>{j + 1}</span>
-              <input aria-label={item.exercise.name + ' weight set ' + (j + 1)} type="number" inputMode="decimal" min="0" step="0.5" value={set.weight} onChange={e => updateSet(i, set.id, 'weight', Number(e.target.value))}/>
-              <input aria-label={item.exercise.name + ' reps set ' + (j + 1)} type="number" inputMode="numeric" min="0" step="1" value={set.reps} onChange={e => updateSet(i, set.id, 'reps', Number(e.target.value))}/>
+              <SetNumberInput label={item.exercise.name + ' weight set ' + (j + 1)} value={set.weight} step="0.5" onValueChange={value => updateSet(i, set.id, 'weight', value)}/>
+              <SetNumberInput label={item.exercise.name + ' reps set ' + (j + 1)} value={set.reps} step="1" onValueChange={value => updateSet(i, set.id, 'reps', value)}/>
               <input aria-label={item.exercise.name + ' completed set ' + (j + 1)} type="checkbox" checked={set.completed} onChange={e => updateSet(i, set.id, 'completed', e.target.checked)}/>
               <button aria-label={'Remove set ' + (j + 1)} type="button" onClick={() => updateExercise(i, exercise => ({ ...exercise, sets: exercise.sets.filter(s => s.id !== set.id) }))}>×</button>
             </div>)}
@@ -197,7 +262,22 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
             <button className="workout-danger-text" type="button" onClick={() => { if (window.confirm('Discard this unsaved workout?')) setActive(null) }}>Discard</button></div>
         </>}
       </section>}
-      {view === 'routines' && <section className="card workout-panel"><h2>Your routines</h2><p className="subtitle">Create a routine by adding exercises to a workout, then choose “Save as routine.”</p>
+      {view === 'routines' && <section className="card workout-panel"><h2>Your routines</h2><p className="subtitle">Build a routine here, save one during a workout, or convert an earlier workout from History.</p>
+        {!routineDraft ? <button className="workout-primary" type="button" onClick={() => { setRoutineDraft({ name: '', exercises: [] }); setError('') }}>+ Create routine</button> : <div className="workout-routine-builder">
+          <label className="workout-routine-name">Routine name<input value={routineDraft.name} maxLength={80} placeholder="e.g. Push Day" onChange={e => setRoutineDraft({ ...routineDraft, name: e.target.value })}/></label>
+          <h3>Exercises ({routineDraft.exercises.length})</h3>
+          {routineDraft.exercises.map((exercise, index) => <div className="workout-routine-exercise" key={exercise.id + index}><span>{index + 1}. {exercise.name}</span><button className="workout-danger-text" type="button" onClick={() => setRoutineDraft(current => current && ({ ...current, exercises: current.exercises.filter((_, i) => i !== index) }))}>Remove</button></div>)}
+          <div className="workout-filters"><input aria-label="Search routine exercises" placeholder="Search exercises..." value={search} onChange={e => setSearch(e.target.value)}/>
+            <select aria-label="Routine muscle group" value={muscle} onChange={e => setMuscle(e.target.value)}>{['All', 'Chest', 'Back', 'Shoulders', 'Legs', 'Arms', 'Core', 'Cardio'].map(v => <option key={v}>{v}</option>)}</select>
+            <select aria-label="Routine equipment" value={equipment} onChange={e => setEquipment(e.target.value)}>{['All', 'Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight'].map(v => <option key={v}>{v}</option>)}</select>
+          </div>
+          <div className="workout-library-items workout-routine-picker">{catalog.map(exercise => <button type="button" key={exercise.id} onClick={() => setRoutineDraft(current => current && ({ ...current, exercises: [...current.exercises, exercise] }))}>
+            <span className="workout-exercise-thumb">{repdbImage(exercise.id) ? <img src={repdbImage(exercise.id)!} alt={exercise.name + ' illustration by RepDB'} loading="lazy"/> : <span aria-hidden="true" className="workout-no-art">EX</span>}</span>
+            <span className="workout-exercise-name">{exercise.name}<small>{exercise.muscle} · {exercise.equipment}</small></span><span className="workout-add-sign" aria-hidden="true">+</span>
+          </button>)}</div>
+          <a className="repdb-credit" href="https://repdb.co" target="_blank" rel="noopener noreferrer">Exercise data by RepDB (repdb.co)</a>
+          <div className="workout-actions"><button className="workout-primary" type="button" disabled={busy || !routineDraft.exercises.length || !routineDraft.name.trim()} onClick={() => void saveNewRoutine()}>Save routine</button><button className="workout-secondary" type="button" onClick={() => setRoutineDraft(null)}>Cancel</button></div>
+        </div>}
         {data.routines.length === 0 ? <p>No saved routines yet.</p> : data.routines.map(r => <div className="workout-history-row" key={r.id}><div><strong>{r.name}</strong><p>{r.exercises.map(e => e.name).join(' · ')}</p></div><div className="workout-inline-actions">
           <button className="workout-secondary" type="button" onClick={() => startFromRoutine(r.id)}>Start</button>
           <button className="workout-danger-text" disabled={busy} type="button" onClick={() => { if (window.confirm('Delete this routine?')) void persist({ ...data, routines: data.routines.filter(x => x.id !== r.id) }, 'Routine deleted.') }}>Delete</button></div></div>)}
@@ -206,6 +286,7 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
         {history.length === 0 ? <p>No completed workouts yet.</p> : history.map(s => <details className="workout-history-row" key={s.id}><summary><strong>{s.name}</strong> <small>{s.date} · {completedSets(s)} sets · {number(totalVolume(s))} lb volume</small></summary>
           {s.exercises.map((e, i) => <p key={i}><strong>{e.exercise.name}:</strong> {e.sets.filter(t => t.completed).map(t => t.weight + ' lb × ' + t.reps).join(', ') || 'No completed sets'}</p>)}
           {s.notes && <p><em>{s.notes}</em></p>}
+          <button className="workout-secondary" disabled={busy} type="button" onClick={() => void saveHistoryAsRoutine(s)}>Save as routine</button>
           <button className="workout-danger-text" disabled={busy} type="button" onClick={() => { if (window.confirm('Delete this saved workout?')) void persist({ ...data, history: data.history.filter(x => x.id !== s.id) }, 'Workout deleted.') }}>Delete workout</button>
         </details>)}
       </section>}
