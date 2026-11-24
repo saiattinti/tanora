@@ -86,3 +86,34 @@
 .workout-set-type{grid-column:2 / 5;display:flex;align-items:center;gap:10px;font-size:11px;color:#86a69e;padding:1px 0 8px}
 .workout-set-type select{border-radius:7px;border:1px solid #b4d4ca;padding:5px 8px;background:#f1f8f5;color:#17594c;min-width:110px}
 [data-theme='dark'] .workout-set-type select{background:#122126;color:#d5f4e9;border-color:#42565c}
+
+/* Beta 2.1.2: gym tools and workout unit selector */
+.workout-nav{grid-template-columns:repeat(5,minmax(0,1fr))}
+.workout-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:end}
+.workout-unit-select{font-size:12px;color:#71968d;display:flex;align-items:center;gap:7px}
+.workout-unit-select select{padding:9px 10px;border:1px solid #b4d4ca;border-radius:9px;background:#e6f5ef;color:#087f5b;font:inherit}
+.workout-utility{border:1px solid #b9d8ce;border-radius:14px;padding:16px;margin:10px 0 20px;display:grid;gap:12px}
+.workout-utility h3,.workout-utility h4{margin:0}
+.workout-utility-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.workout-timer-clock{font-size:29px;line-height:1;font-variant-numeric:tabular-nums;color:#16a085}
+.workout-timer-presets{display:flex;flex-wrap:wrap;gap:7px}
+.workout-timer-presets button{background:#e6f5ef;color:#087f5b;padding:9px 12px;border-radius:9px}
+.workout-timer-custom{display:flex;align-items:center;gap:7px;font-size:12px}
+.workout-timer-custom input{max-width:85px}
+.workout-utility-check{font-size:12px;display:flex;align-items:center;gap:7px}
+.workout-utility-check input{accent-color:#16a085}
+.workout-utility-hint{font-size:12px;line-height:1.55;color:#819c98;margin:0}
+.workout-timer-done{font-size:13px;font-weight:650;color:#16a085}
+.workout-plate-inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.workout-plate-inputs label{font-size:12px;display:grid;gap:6px}
+.workout-plate-inputs input,.workout-timer-custom input,.workout-plate-list input{background:white;color:#172b32;border:1px solid #cbded8;border-radius:8px;padding:9px;min-width:0;width:100%;font:inherit}
+.workout-plate-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
+.workout-plate-list label{font-size:12px;display:grid;gap:5px}
+.workout-plate-result{border-radius:10px;background:#e6f5ef;padding:12px;color:#086b53}
+.workout-plate-result p{font-weight:650;margin:7px 0}
+.workout-plate-result small{font-size:11px}
+[data-theme='dark'] .workout-utility{border-color:#42565c}
+[data-theme='dark'] .workout-unit-select select,[data-theme='dark'] .workout-timer-presets button{background:#283d3b;color:#d5f4e9;border-color:#42565c}
+[data-theme='dark'] .workout-timer-custom input,[data-theme='dark'] .workout-plate-inputs input,[data-theme='dark'] .workout-plate-list input{background:#122126;color:#f1faf7;border-color:#42565c}
+[data-theme='dark'] .workout-plate-result{background:#283d3b;color:#d5f4e9}
+@media(max-width:600px){.workout-nav{gap:4px}.workout-nav button{padding:11px 2px;font-size:12px}.workout-header-actions{justify-content:flex-start}.workout-utility{padding:12px}.workout-timer-clock{font-size:25px}.workout-plate-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
