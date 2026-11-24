@@ -69,6 +69,7 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
   const [editingId, setEditingId] = useState<string | null>(null)
   const [recoverable, setRecoverable] = useState(() => readWorkoutDraft(userId))
   const ownDraftWrite = useRef(0)
+  const draftConflictWarned = useRef(false)
   const [draftError, setDraftError] = useState('')
   const [view, setView] = useState<View>('log')
   const [ready, setReady] = useState(false)
@@ -88,7 +89,10 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
     try {
       const existing = readWorkoutDraft(userId)
       if (existing && existing.savedAt > ownDraftWrite.current && ownDraftWrite.current !== 0) {
-        console.warn('Tanora: another tab updated this draft; refusing a stale overwrite.')
+        if (!draftConflictWarned.current) {
+          draftConflictWarned.current = true
+          window.alert('This workout draft was changed in another tab. This tab will not overwrite it. Copy your unsaved changes and reload to recover the newer version.')
+        }
         return
       }
       const savedAt = Date.now()
@@ -100,7 +104,9 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
   }, [active, editingId, userId])
 
   function beginWorkout(session: WorkoutSession, originalId: string | null = null) {
-    if (recoverable) {
+    const existingDraft = readWorkoutDraft(userId)
+    if (recoverable || existingDraft) {
+      if (existingDraft) setRecoverable(existingDraft)
       setError('Resume or discard the recovered draft before starting another workout.')
       return
     }
@@ -115,6 +121,7 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
     if (!window.confirm('Discard this unsaved workout?')) return
     removeWorkoutDraft(userId)
     ownDraftWrite.current = 0
+    draftConflictWarned.current = false
     setRecoverable(null)
     setEditingId(null)
     setActive(null)
@@ -254,6 +261,7 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
     if (saved) {
       removeWorkoutDraft(userId)
       ownDraftWrite.current = 0
+      draftConflictWarned.current = false
       setEditingId(null)
       setActive(null)
       setRecoverable(null)
