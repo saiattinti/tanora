@@ -181,7 +181,7 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
             <div className="workout-filters"><input aria-label="Search exercises" placeholder="Search exercises..." value={search} onChange={e => setSearch(e.target.value)}/>
               <select aria-label="Muscle group" value={muscle} onChange={e => setMuscle(e.target.value)}>{['All', 'Chest', 'Back', 'Shoulders', 'Legs', 'Arms', 'Core', 'Cardio'].map(v => <option key={v}>{v}</option>)}</select>
               <select aria-label="Equipment" value={equipment} onChange={e => setEquipment(e.target.value)}>{['All', 'Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight'].map(v => <option key={v}>{v}</option>)}</select></div>
-            <p className="workout-library-count">{catalog.length} exercises found · ${exerciseLibrary.length} total</p>
+            <p className="workout-library-count">{catalog.length} exercises found · {exerciseLibrary.length} total</p>
             <div className="workout-library-items">{catalog.map(e => <button type="button" key={e.id} onClick={() => {
               setActive(previous => previous && ({ ...previous, exercises: [...previous.exercises, makeExercise(e)] }))
               setShowLibrary(false)
