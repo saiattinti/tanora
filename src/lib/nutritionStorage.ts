@@ -223,3 +223,15 @@ export async function deleteCloudFavorite(
 
   checkError(error)
 }
+
+// Inserts a saved meal's components in one database statement, not separate partial writes.
+export async function saveCloudEntries(userId: string, entries: SavedEntry[]): Promise<void> {
+  if (!entries.length) return
+  const { error } = await supabase.from('food_entries').insert(entries.map(entry => ({
+    id:entry.id,user_id:userId,date:entry.date,eaten_at:entry.eatenAt ?? null,
+    name:entry.name,grams:entry.grams,unit:entry.unit ?? 'g',
+    calories:entry.calories,protein:entry.protein,carbs:entry.carbs,fat:entry.fat,
+    food:entry.food ?? null,
+  })))
+  checkError(error)
+}
