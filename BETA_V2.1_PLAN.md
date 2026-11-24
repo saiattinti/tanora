@@ -4,7 +4,7 @@ Status: APPROVED SCOPE, IMPLEMENTATION NOT STARTED
 Base release: `v2.0.0-beta` (`main` as of branch creation)
 Development branch: `feature/beta-v2.1-quality-of-life`
 
-## Locked scope: all ten requested features
+## Locked scope: eleven requested features
 
 1. Built-in rest timer
 2. Auto-fill previous weights and reps
@@ -16,8 +16,9 @@ Development branch: `feature/beta-v2.1-quality-of-life`
 8. Weekly nutrition and workout overview
 9. Barbell plate calculator
 10. Pounds/kilograms toggle
+11. Food diary timestamps with chronological sorting and editable log times
 
-Do not silently remove, replace, or expand this scope. Treat the plan below as an initial implementation design that can be refined while keeping these ten user-facing requirements intact.
+Do not silently remove, replace, or expand this scope. Treat the plan below as an initial implementation design that can be refined while keeping these eleven user-facing requirements intact.
 
 ## Phase 0 | Safety and compatibility
 
@@ -76,7 +77,7 @@ Acceptance: 2.0 logs remain readable; a workout can be edited and resaved; draft
 
 Acceptance: timer accurate after app is backgrounded; plate calculator results are symmetric and honor inventory; switching units does not alter recorded physical loads.
 
-## Phase 3 | Nutrition convenience (features 6, 7)
+## Phase 3 | Nutrition convenience (features 6, 7, 11)
 
 **Saved meals**
 - A named, reusable group of ingredients/foods with individual measured quantities.
@@ -90,12 +91,22 @@ Acceptance: timer accurate after app is backgrounded; plate calculator results a
 - Store a snapshot of ingredient nutrition when saving a recipe so changes to external food data do not unexpectedly rewrite old recipes.
 - Share existing nutrition models where possible, but keep meals and recipes distinct: meals group ready-to-log items; recipes define a combined cooked food.
 
+**Food diary timestamps and chronological ordering**
+- Every new food diary entry records the time it was eaten; default the time picker to the user's current local time at the moment of logging, with a manual time override before saving.
+- Display the time next to each food and sort each day's diary from earliest to latest; use a stable secondary sort for equal times.
+- Allow changing the logged time when editing an existing diary entry, without altering its nutritional values.
+- Persist an unambiguous timestamp (e.g., ISO 8601 UTC instant) plus the intended local date/time representation or zone as appropriate, so daylight-saving changes, device timezone changes and entries logged for past/future dates are handled deliberately.
+- For foods logged onto a different date, show a clearly editable date and time; do not silently attach the current date's clock time without letting the user adjust it.
+- Keep historical v2.0 food records unchanged. Existing entries without an eaten-at timestamp should still render and be grouped correctly with an explicit "Time not recorded" label, rather than inventing historical times from creation metadata.
+- Preserve the entered date/time and meaningful ordering when signing in, syncing, and adding foods through saved meals and recipes. Apply consistent ordering to cloud and guest diary data.
+- Implement as a backward-compatible, additive database migration if a timestamp field is needed; do not drop or rewrite existing food entries.
+
 **Persistence**
 - Prefer a new user-scoped `saved_meals` and `saved_recipes` schema or equally secure versioned data store. Separate guest/local storage.
 - The existing `favorite_foods` records and `food_entries` are preserved. No forced migration of old entries.
 - Document and review the migrations before running them.
 
-Acceptance: correctly total ingredients, adjust to 0.5/1.5 servings, repeat a saved meal, save a recipe by cooked weight, and verify historic diaries are unchanged.
+Acceptance: correctly total ingredients, adjust to 0.5/1.5 servings, repeat a saved meal, save a recipe by cooked weight, verify historic diaries are unchanged, and confirm timestamps are editable and diary entries sort earliest to latest (including ties and old entries without times).
 
 ## Phase 4 | Unified insights (feature 8)
 
@@ -116,7 +127,7 @@ Acceptance: results match the actual diary and workout history, date boundaries 
 4. Implement Phase 3 with additive Supabase migration, guest storage, and complete nutrition regression checks.
 5. Implement Phase 4 dashboard.
 6. Run lint/build, preview deploy on a non-main Cloudflare branch, configure Auth redirect origins if needed.
-7. Confirm iPhone PWA, Google login, nutrition/USDA/barcode, exercises/RepDB, all ten new features, guest isolation and cloud synchronization.
+7. Confirm iPhone PWA, Google login, nutrition/USDA/barcode, exercises/RepDB, all eleven new features, guest isolation and cloud synchronization.
 8. Merge by PR only after review and successful test. Deploy `main` to production, verify production, tag `v2.1.0-beta`, and append release notes.
 
 ## Explicitly deferred
