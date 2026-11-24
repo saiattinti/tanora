@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
-import { bestWeight, completedSets, exerciseLibrary, totalVolume } from './lib/workoutTypes'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { bestWeight, completedSets, exerciseLibrary, totalVolume, isWorkingSet, lastWorkingSets } from './lib/workoutTypes'
 import type { Exercise, WorkoutData, WorkoutExercise, WorkoutSession } from './lib/workoutTypes'
 import { loadWorkoutData, saveWorkoutData } from './lib/workoutStorage'
 import { repdbImage } from './lib/repdbImages'
+import { readWorkoutDraft, removeWorkoutDraft, storeWorkoutDraft, workoutDraftKey } from './lib/workoutDraft'
 import './WorkoutTracker.css'
 
 type View = 'log' | 'routines' | 'history' | 'progress'
@@ -47,8 +48,16 @@ function SetNumberInput({ value, label, step, onValueChange }: {
   />
 }
 
-const newSet = () => ({ id: crypto.randomUUID(), reps: 8, weight: 0, completed: false })
-const makeExercise = (exercise: Exercise): WorkoutExercise => ({ exercise, sets: [newSet(), newSet(), newSet()] })
+const newSet = () => ({ id: crypto.randomUUID(), reps: 8, weight: 0, completed: false, kind: 'working' as const })
+const newExercise = (exercise: Exercise, history: WorkoutSession[]): WorkoutExercise => {
+  const previous = lastWorkingSets(history, exercise.id)
+  return {
+    exercise,
+    sets: previous.length
+      ? previous.map(set => ({ ...newSet(), reps: set.reps, weight: set.weight }))
+      : [newSet(), newSet(), newSet()],
+  }
+}
 const newSession = (): WorkoutSession => ({
   id: crypto.randomUUID(), name: 'Workout', date: dateToday(), exercises: [], notes: '',
 })
@@ -57,6 +66,10 @@ const number = (value: number) => Number.isFinite(value) ? value.toLocaleString(
 export default function WorkoutTracker({ userId, onNutrition }: { userId: string | null, onNutrition: () => void }) {
   const [data, setData] = useState<WorkoutData>({ history: [], routines: [] })
   const [active, setActive] = useState<WorkoutSession | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [recoverable, setRecoverable] = useState(() => readWorkoutDraft(userId))
+  const ownDraftWrite = useRef(0)
+  const [draftError, setDraftError] = useState('')
   const [view, setView] = useState<View>('log')
   const [ready, setReady] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -68,6 +81,63 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
   const [showLibrary, setShowLibrary] = useState(false)
   const [routineDraft, setRoutineDraft] = useState<{ name: string, exercises: Exercise[] } | null>(null)
   const [selectedProgressId, setSelectedProgressId] = useState('')
+
+  // Keep unsaved edits locally. Drafts are never uploaded or counted as completed workouts.
+  useEffect(() => {
+    if (!active) return
+    try {
+      const existing = readWorkoutDraft(userId)
+      if (existing && existing.savedAt > ownDraftWrite.current && ownDraftWrite.current !== 0) {
+        setDraftError('Another tab updated this draft. Copy any unsaved changes before refreshing.')
+        return
+      }
+      const savedAt = Date.now()
+      storeWorkoutDraft(userId, { version: 1, session: active, editingId, savedAt })
+      ownDraftWrite.current = savedAt
+    } catch {
+      setDraftError('Could not back up the unfinished workout in this browser.')
+    }
+  }, [active, editingId, userId])
+
+  function beginWorkout(session: WorkoutSession, originalId: string | null = null) {
+    if (recoverable) {
+      setError('Resume or discard the recovered draft before starting another workout.')
+      return
+    }
+    setError('')
+    setMessage('')
+    setEditingId(originalId)
+    setActive(session)
+    setView('log')
+  }
+
+  function discardCurrent() {
+    if (!window.confirm('Discard this unsaved workout?')) return
+    removeWorkoutDraft(userId)
+    ownDraftWrite.current = 0
+    setRecoverable(null)
+    setEditingId(null)
+    setActive(null)
+    setDraftError('')
+  }
+
+  function resumeDraft() {
+    if (!recoverable) return
+    setEditingId(recoverable.editingId)
+    setActive(recoverable.session)
+    ownDraftWrite.current = recoverable.savedAt
+    setRecoverable(null)
+    setDraftError('')
+    setView('log')
+  }
+
+  function discardRecoveredDraft() {
+    if (!window.confirm('Discard the recovered workout draft?')) return
+    removeWorkoutDraft(userId)
+    setRecoverable(null)
+    ownDraftWrite.current = 0
+    setDraftError('')
+  }
 
   useEffect(() => {
     let current = true
@@ -138,14 +208,30 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
   function startFromRoutine(id: string) {
     const routine = data.routines.find(r => r.id === id)
     if (!routine) return
-    setActive({ ...newSession(), name: routine.name, exercises: routine.exercises.map(makeExercise) })
-    setView('log')
+    beginWorkout({ ...newSession(), name: routine.name, exercises: routine.exercises.map(exercise => newExercise(exercise, data.history)) })
+  }
+
+  function startEditingWorkout(session: WorkoutSession) {
+    beginWorkout({
+      ...session,
+      exercises: session.exercises.map(item => ({
+        exercise: item.exercise,
+        sets: item.sets.map(set => ({ ...set })),
+      })),
+    }, session.id)
+  }
+
+  function resetSuggestedSets(exerciseIndex: number) {
+    updateExercise(exerciseIndex, item => ({
+      ...item,
+      sets: [newSet(), newSet(), newSet()],
+    }))
   }
 
   async function finishWorkout() {
     if (!active || active.exercises.length === 0) return
-    if (!active.exercises.some(e => e.sets.some(s => s.completed))) {
-      setError('Complete at least one set before saving.')
+    if (!active.exercises.some(e => e.sets.some(s => s.completed && isWorkingSet(s)))) {
+      setError('Complete at least one working set before saving.')
       return
     }
     if (!active.name.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(active.date)) {
@@ -156,8 +242,22 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
       !Number.isFinite(s.weight) || !Number.isFinite(s.reps) ||
       s.weight < 0 || s.reps < 0 || !Number.isInteger(s.reps)))
     if (hasInvalid) { setError('Weights must be nonnegative and repetitions must be whole numbers.'); return }
-    const saved = await persist({ ...data, history: [active, ...data.history] }, 'Workout saved to your history.')
-    if (saved) setActive(null)
+    const nextHistory = editingId
+      ? data.history.map(session => session.id === editingId ? { ...active, id: editingId } : session)
+      : [active, ...data.history]
+    if (editingId && !data.history.some(session => session.id === editingId)) {
+      setError('The original workout could not be found. No changes were saved.')
+      return
+    }
+    const saved = await persist({ ...data, history: nextHistory },
+      editingId ? 'Workout changes saved.' : 'Workout saved to your history.')
+    if (saved) {
+      removeWorkoutDraft(userId)
+      ownDraftWrite.current = 0
+      setEditingId(null)
+      setActive(null)
+      setRecoverable(null)
+    }
   }
 
   async function saveRoutine() {
