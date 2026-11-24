@@ -62,3 +62,8 @@
 .workout-exercise-name small{font-weight:400}
 .workout-add-sign{font-size:20px;font-weight:500;color:#17a085}
 @media(max-width:600px){.workout-library-items button{flex-direction:row}.workout-exercise-thumb{width:56px;height:56px}}
+
+.repdb-credit{display:inline-block;margin:12px 0 2px;color:#16a085;font-size:12px;text-decoration:underline;text-underline-offset:3px}
+.workout-no-art{font-size:13px!important;font-weight:800;letter-spacing:1px;color:#56aa94}
+.workout-exercise-thumb{position:relative}
+.workout-exercise-thumb img{position:relative;z-index:1}
