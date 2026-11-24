@@ -3,7 +3,7 @@ import { bestWeight, completedSets, exerciseLibrary, totalVolume, isWorkingSet, 
 import type { Exercise, WorkoutData, WorkoutExercise, WorkoutSession } from './lib/workoutTypes'
 import { loadWorkoutData, saveWorkoutData } from './lib/workoutStorage'
 import { repdbImage } from './lib/repdbImages'
-import { readWorkoutDraft, removeWorkoutDraft, storeWorkoutDraft, workoutDraftKey } from './lib/workoutDraft'
+import { readWorkoutDraft, removeWorkoutDraft, storeWorkoutDraft } from './lib/workoutDraft'
 import './WorkoutTracker.css'
 
 type View = 'log' | 'routines' | 'history' | 'progress'
@@ -88,14 +88,14 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
     try {
       const existing = readWorkoutDraft(userId)
       if (existing && existing.savedAt > ownDraftWrite.current && ownDraftWrite.current !== 0) {
-        setDraftError('Another tab updated this draft. Copy any unsaved changes before refreshing.')
+        console.warn('Tanora: another tab updated this draft; refusing a stale overwrite.')
         return
       }
       const savedAt = Date.now()
       storeWorkoutDraft(userId, { version: 1, session: active, editingId, savedAt })
       ownDraftWrite.current = savedAt
     } catch {
-      setDraftError('Could not back up the unfinished workout in this browser.')
+      console.warn('Tanora: workout draft could not be stored locally.')
     }
   }, [active, editingId, userId])
 
@@ -171,7 +171,7 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
     .map(s => ({
       date: s.date,
       weight: Math.max(0, ...s.exercises.filter(e => e.exercise.id === selectedProgress)
-        .flatMap(e => e.sets.filter(t => t.completed).map(t => t.weight))),
+        .flatMap(e => e.sets.filter(t => t.completed && isWorkingSet(t)).map(t => t.weight))),
     })), [data.history, selectedProgress])
 
   async function persist(next: WorkoutData, success: string) {
@@ -199,7 +199,7 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
     }))
   }
 
-  function updateSet(exerciseIndex: number, setId: string, key: 'weight' | 'reps' | 'completed', value: number | boolean) {
+  function updateSet(exerciseIndex: number, setId: string, key: 'weight' | 'reps' | 'completed' | 'kind', value: number | boolean | 'warmup' | 'working') {
     updateExercise(exerciseIndex, e => ({
       ...e, sets: e.sets.map(set => set.id === setId ? { ...set, [key]: value } : set),
     }))
@@ -318,19 +318,29 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
       </nav>
       {error && <p className="workout-error" role="alert">{error} <button type="button" onClick={() => setError('')}>Dismiss</button></p>}
       {message && <p className="workout-success" role="status">{message}</p>}
+      {draftError && <p className="workout-error" role="alert">{draftError}</p>}
+      {recoverable && <section className="card workout-panel workout-draft-recovery">
+        <h2>Unfinished workout found</h2>
+        <p>Resume <strong>{recoverable.session.name}</strong>, or discard this browser's saved draft. Your finished workouts are untouched.</p>
+        <div className="workout-actions">
+          <button className="workout-primary" type="button" onClick={resumeDraft}>Resume draft</button>
+          <button className="workout-secondary" type="button" onClick={discardRecoveredDraft}>Discard draft</button>
+        </div>
+      </section>}
       {view === 'log' && <section className="card workout-panel">
         {!active ? <>
           <h2>Start a workout</h2><p className="subtitle">Log your sets and see how they compare with previous sessions.</p>
-          <button className="workout-primary" type="button" onClick={() => setActive(newSession())}>+ Start empty workout</button>
+          <button className="workout-primary" type="button" onClick={() => beginWorkout(newSession())}>+ Start empty workout</button>
           {data.routines.length > 0 && <div className="workout-list"><h3>Start from a routine</h3>{data.routines.map(r =>
             <button className="workout-item-button" key={r.id} type="button" onClick={() => startFromRoutine(r.id)}>{r.name} <small>{r.exercises.length} exercises</small></button>)}</div>}
         </> : <>
           <div className="workout-fields">
-            <label>Workout name<input value={active.name} maxLength={80} onChange={e => setActive({ ...active, name: e.target.value })}/></label>
+            <label>{editingId ? 'Edit workout name' : 'Workout name'}<input value={active.name} maxLength={80} onChange={e => setActive({ ...active, name: e.target.value })}/></label>
             <label>Date<input type="date" value={active.date} onChange={e => setActive({ ...active, date: e.target.value })}/></label>
           </div>
           {active.exercises.map((item, i) => <article className="workout-exercise" key={item.exercise.id + i}>
-            <div className="workout-exercise-top"><div><h3>{item.exercise.name}</h3><small>{item.exercise.muscle} · {item.exercise.equipment} · Previous best: {number(bestWeight(history, item.exercise.id))} lb</small></div>
+            <div className="workout-exercise-top"><div><h3>{item.exercise.name}</h3><small>{item.exercise.muscle} · {item.exercise.equipment} · Previous working-set best: {number(bestWeight(history.filter(s => s.id !== editingId), item.exercise.id))} lb</small>
+              <div className="workout-prefill-note">New exercises use last completed working sets when available. <button type="button" onClick={() => resetSuggestedSets(i)}>Reset sets</button></div></div>
               <button type="button" className="workout-danger-text" onClick={() => setActive({ ...active, exercises: active.exercises.filter((_, index) => index !== i) })}>Remove</button></div>
             <div className="workout-set-header"><span>Set</span><span>lb</span><span>Reps</span><span>Done</span><span></span></div>
             {item.sets.map((set, j) => <div className="workout-set" key={set.id}>
@@ -339,6 +349,11 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
               <SetNumberInput label={item.exercise.name + ' reps set ' + (j + 1)} value={set.reps} step="1" onValueChange={value => updateSet(i, set.id, 'reps', value)}/>
               <input aria-label={item.exercise.name + ' completed set ' + (j + 1)} type="checkbox" checked={set.completed} onChange={e => updateSet(i, set.id, 'completed', e.target.checked)}/>
               <button aria-label={'Remove set ' + (j + 1)} type="button" onClick={() => updateExercise(i, exercise => ({ ...exercise, sets: exercise.sets.filter(s => s.id !== set.id) }))}>×</button>
+              <label className="workout-set-type">Set type
+                <select aria-label={item.exercise.name + ' type set ' + (j + 1)} value={set.kind ?? 'working'} onChange={e => updateSet(i, set.id, 'kind', e.target.value as 'warmup' | 'working')}>
+                  <option value="working">Working set</option><option value="warmup">Warm-up</option>
+                </select>
+              </label>
             </div>)}
             <button className="workout-secondary" type="button" onClick={() => updateExercise(i, e => ({ ...e, sets: [...e.sets, newSet()] }))}>+ Add set</button>
           </article>)}
@@ -349,7 +364,7 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
               <select aria-label="Equipment" value={equipment} onChange={e => setEquipment(e.target.value)}>{['All', 'Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight'].map(v => <option key={v}>{v}</option>)}</select></div>
             <p className="workout-library-count">{catalog.length} exercises found · {exerciseLibrary.length} total</p>
             <div className="workout-library-items">{catalog.map(e => <button type="button" key={e.id} onClick={() => {
-              setActive(previous => previous && ({ ...previous, exercises: [...previous.exercises, makeExercise(e)] }))
+              setActive(previous => previous && ({ ...previous, exercises: [...previous.exercises, newExercise(e, history)] }))
               setShowLibrary(false)
             }}><span className="workout-exercise-thumb">
                 {repdbImage(e.id) ? <img src={repdbImage(e.id)!} alt={e.name + ' starting position, illustration by RepDB'} loading="lazy" onError={event => { event.currentTarget.style.display = 'none' }} /> : <span aria-hidden="true" className="workout-no-art">EX</span>}
@@ -357,9 +372,9 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
             <a className="repdb-credit" href="https://repdb.co" target="_blank" rel="noopener noreferrer">Exercise data by RepDB (repdb.co)</a>
           </div>}
           <label className="workout-notes">Notes<textarea maxLength={1000} rows={2} value={active.notes} onChange={e => setActive({ ...active, notes: e.target.value })} placeholder="How did it feel?"/></label>
-          <div className="workout-actions"><button className="workout-primary" disabled={busy || active.exercises.length === 0} type="button" onClick={() => void finishWorkout()}>Finish & save workout</button>
+          <div className="workout-actions"><button className="workout-primary" disabled={busy || active.exercises.length === 0} type="button" onClick={() => void finishWorkout()}>{editingId ? 'Save workout changes' : 'Finish & save workout'}</button>
             <button className="workout-secondary" disabled={busy || active.exercises.length === 0} type="button" onClick={() => void saveRoutine()}>Save as routine</button>
-            <button className="workout-danger-text" type="button" onClick={() => { if (window.confirm('Discard this unsaved workout?')) setActive(null) }}>Discard</button></div>
+            <button className="workout-danger-text" type="button" onClick={discardCurrent}>{editingId ? 'Cancel editing' : 'Discard'}</button></div>
         </>}
       </section>}
       {view === 'routines' && <section className="card workout-panel"><h2>Your routines</h2><p className="subtitle">Build a routine here, save one during a workout, or convert an earlier workout from History.</p>
@@ -384,8 +399,9 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
       </section>}
       {view === 'history' && <section className="card workout-panel"><h2>Workout history</h2>
         {history.length === 0 ? <p>No completed workouts yet.</p> : history.map(s => <details className="workout-history-row" key={s.id}><summary><strong>{s.name}</strong> <small>{s.date} · {completedSets(s)} sets · {number(totalVolume(s))} lb volume</small></summary>
-          {s.exercises.map((e, i) => <p key={i}><strong>{e.exercise.name}:</strong> {e.sets.filter(t => t.completed).map(t => t.weight + ' lb × ' + t.reps).join(', ') || 'No completed sets'}</p>)}
+          {s.exercises.map((e, i) => <p key={i}><strong>{e.exercise.name}:</strong> {e.sets.filter(t => t.completed).map(t => t.weight + ' lb × ' + t.reps + (t.kind === 'warmup' ? ' (warm-up)' : '')).join(', ') || 'No completed sets'}</p>)}
           {s.notes && <p><em>{s.notes}</em></p>}
+          <button className="workout-secondary" disabled={busy || !!active || !!recoverable} type="button" onClick={() => startEditingWorkout(s)}>Edit workout</button>
           <button className="workout-secondary" disabled={busy} type="button" onClick={() => void saveHistoryAsRoutine(s)}>Save as routine</button>
           <button className="workout-danger-text" disabled={busy} type="button" onClick={() => { if (window.confirm('Delete this saved workout?')) void persist({ ...data, history: data.history.filter(x => x.id !== s.id) }, 'Workout deleted.') }}>Delete workout</button>
         </details>)}
