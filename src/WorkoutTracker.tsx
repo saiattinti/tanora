@@ -17,9 +17,9 @@ function SetNumberInput({ value, label, step, onValueChange }: {
   step: string
   onValueChange: (next: number) => void
 }) {
-  const [text, setText] = useState(String(value))
-  const [focused, setFocused] = useState(false)
-  useEffect(() => { if (!focused) setText(String(value)) }, [value, focused])
+  // Each set has its own stable React key, so edit text can stay local.
+  // Keep the text during editing to allow blank input and decimal typing.
+  const [text, setText] = useState(value === 0 ? '' : String(value))
   return <input
     aria-label={label}
     type="number"
@@ -27,22 +27,22 @@ function SetNumberInput({ value, label, step, onValueChange }: {
     min="0"
     step={step}
     placeholder="0"
-    value={focused ? text : value === 0 ? '' : String(value)}
-    onFocus={event => { setFocused(true); setText(String(value)); event.currentTarget.select() }}
+    value={text}
+    onFocus={event => event.currentTarget.select()}
     onChange={event => {
       const next = event.target.value
       setText(next)
-      if (next.trim() !== '' && Number.isFinite(Number(next)) && Number(next) >= 0) {
-        onValueChange(Number(next))
+      const parsed = Number(next)
+      if (next.trim() !== '' && Number.isFinite(parsed) && parsed >= 0 && (step !== '1' || Number.isInteger(parsed))) {
+        onValueChange(parsed)
       }
     }}
     onBlur={() => {
-      setFocused(false)
       const parsed = Number(text)
       const valid = text.trim() !== '' && Number.isFinite(parsed) && parsed >= 0 && (step !== '1' || Number.isInteger(parsed))
       const next = valid ? parsed : 0
       onValueChange(next)
-      setText(String(next))
+      setText(next === 0 ? '' : String(next))
     }}
   />
 }
