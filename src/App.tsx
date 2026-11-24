@@ -5,6 +5,10 @@ import type { USDAFood } from './usda'
 import SmartGoals from './SmartGoals'
 import BarcodeScanner from './BarcodeScanner'
 import ManualFood from './ManualFood'
+import NutritionTemplates from './NutritionTemplates'
+import { localClock, timeFromInstant, instantFor, readableTime, sortDiaryByTime } from './lib/foodTimes'
+import { loadTemplates, saveMeal, saveRecipe, deleteMeal, deleteRecipe } from './lib/nutritionTemplates'
+import type { SavedMeal, SavedRecipe, NutritionTemplates as Templates } from './lib/nutritionTemplates'
 import type {
   BarcodeProduct,
   BarcodeNutrition,
@@ -13,6 +17,7 @@ import {
   loadNutritionData,
   saveCloudGoals,
   saveCloudEntry,
+  saveCloudEntries,
   deleteCloudEntry,
   saveCloudFavorite,
   deleteCloudFavorite,
@@ -212,6 +217,9 @@ function App({ userId, userEmail, onSignOut }: Props) {
   const [hasCloudGoals, setHasCloudGoals] = useState(false)
   const [entries, setEntries] = useState<Entry[]>([])
   const [favorites, setFavorites] = useState<Food[]>([])
+  const [templates, setTemplates] = useState<Templates>({meals:[],recipes:[]})
+  const [templateError, setTemplateError] = useState('')
+  const [logClock, setLogClock] = useState(localClock)
 
   const [ready, setReady] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -282,6 +290,8 @@ function App({ userId, userEmail, onSignOut }: Props) {
     setHasCloudGoals(data.goals !== null)
     setEntries(data.entries)
     setFavorites(data.favorites)
+    try { setTemplates(await loadTemplates(userId)) ; setTemplateError('') }
+    catch(e){setTemplateError(e instanceof Error?e.message:'Could not load saved meals and recipes. Apply the 2.1.3 migration before cloud testing.')}
   }, [userId, guest])
 
   useEffect(() => {
@@ -296,6 +306,9 @@ function App({ userId, userEmail, onSignOut }: Props) {
         setEntries(data.entries)
         setFavorites(data.favorites)
         setReady(true)
+        void loadTemplates(userId).then(found=>{
+          if(active){setTemplates(found);setTemplateError('')}
+        }).catch(e=>{if(active)setTemplateError(e instanceof Error?e.message:'Could not load saved meals and recipes. Apply the 2.1.3 migration before cloud testing.')})
       })
       .catch(error => {
         if (!active) return
@@ -422,9 +435,9 @@ function App({ userId, userEmail, onSignOut }: Props) {
     }, 'Your old browser data was imported. The originals remain untouched.')
   }
 
-  const dailyEntries = entries.filter(
+  const dailyEntries = sortDiaryByTime(entries.filter(
     entry => entry.date === selectedDate
-  )
+  ))
 
   const consumed = dailyEntries.reduce<Macros>(
     (sum, entry) => ({
@@ -517,6 +530,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
     setGrams('100')
     setPortionMode('grams')
     setQuantity('1')
+    setLogClock(localClock())
   }
 
   async function performSearch() {
@@ -594,6 +608,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
   }
 
   async function saveManualFood(food: Food, entry: Entry, remember: boolean, saveOnly: boolean) {
+    entry = {...entry, eatenAt: logClock ? instantFor(entry.date, logClock) : null}
     const nextFavorites = remember
       ? uniqueFoods([...favorites.filter(item => item.id !== food.id), food])
       : favorites
@@ -630,6 +645,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
       ...entry,
       id: crypto.randomUUID(),
       date: selectedDate,
+      eatenAt: instantFor(selectedDate, localClock()),
     })
   }
 
@@ -641,6 +657,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
       name: selectedFood.name,
       grams: amount,
       date: selectedDate,
+      eatenAt: logClock ? instantFor(selectedDate, logClock) : null,
       food: selectedFood,
       unit: editingUnit,
       ...preview,
@@ -675,6 +692,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
       id: crypto.randomUUID(),
       name: food.name,
       date: selectedDate,
+      eatenAt: logClock ? instantFor(selectedDate, logClock) : null,
       grams: portionAmount,
       unit: product.servingUnit,
       food,
@@ -712,6 +730,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
     setPortionMode('grams')
     setEditingUnit(entry.unit ?? 'g')
     setEditingId(entry.id)
+    setLogClock(entry.eatenAt ? timeFromInstant(entry.eatenAt) : '')
     setEditingCustomFood(null)
     setSearchMode('ingredients')
     setAddingFood(true)
@@ -1060,7 +1079,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
           className="add-button"
           disabled={busy}
           onClick={() =>
-            addingFood ? closeFood() : setAddingFood(true)
+            addingFood ? closeFood() : (setLogClock(localClock()),setAddingFood(true))
           }
         >
           {addingFood ? 'Cancel' : '+ Add Food'}
@@ -1095,6 +1114,10 @@ function App({ userId, userEmail, onSignOut }: Props) {
       {addingFood && (
         <section className="card food-form">
           <h2>{editingId ? 'Edit Food' : 'Add Food'}</h2>
+          <label className="diary-time-picker">Time eaten (local time)
+            <input type="time" value={logClock} onChange={event => setLogClock(event.target.value)}/>
+            <small>{logClock ? 'Defaults to the current time. Change it for earlier meals.' : 'Blank means time not recorded.'}</small>
+          </label>
 
           {!editingId && (
             <div className="search-mode-switch">
@@ -1443,6 +1466,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
             <div className="diary-entry" key={entry.id}>
               <div className="diary-info">
                 <strong>{entry.name}</strong>
+                <small className="diary-timestamp">{readableTime(entry.eatenAt)}</small>
                 <p>
                   {Math.round(entry.grams * 10) / 10}
                   {' '}{entry.unit ?? 'g'} ·{' '}
