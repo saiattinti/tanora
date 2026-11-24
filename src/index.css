@@ -57,3 +57,8 @@ body { padding-bottom: 58px; }
 [data-theme='dark'] .tanora-main-nav{background:#10191c;border-color:#334a46}
 [data-theme='dark'] .tanora-main-nav button{background:#283d3b;color:#d5f4e9}
 [data-theme='dark'] .tanora-main-nav button.selected{background:#16a085;color:white}
+
+/* Three primary navigation tabs: Nutrition, Workouts, Overview */
+.tanora-main-nav{gap:7px}
+.tanora-main-nav button{max-width:210px;min-width:0;padding:12px 8px}
+@media(max-width:420px){.tanora-main-nav{padding:9px 10px;gap:5px}.tanora-main-nav button{font-size:12px;padding:11px 4px}}
