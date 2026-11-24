@@ -179,12 +179,15 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
           <button className="workout-secondary" type="button" onClick={() => setShowLibrary(v => !v)}>{showLibrary ? 'Hide exercise library' : '+ Add exercise'}</button>
           {showLibrary && <div className="workout-library">
             <div className="workout-filters"><input aria-label="Search exercises" placeholder="Search exercises..." value={search} onChange={e => setSearch(e.target.value)}/>
-              <select aria-label="Muscle group" value={muscle} onChange={e => setMuscle(e.target.value)}>{['All', 'Chest', 'Back', 'Shoulders', 'Legs', 'Arms', 'Core'].map(v => <option key={v}>{v}</option>)}</select>
+              <select aria-label="Muscle group" value={muscle} onChange={e => setMuscle(e.target.value)}>{['All', 'Chest', 'Back', 'Shoulders', 'Legs', 'Arms', 'Core', 'Cardio'].map(v => <option key={v}>{v}</option>)}</select>
               <select aria-label="Equipment" value={equipment} onChange={e => setEquipment(e.target.value)}>{['All', 'Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight'].map(v => <option key={v}>{v}</option>)}</select></div>
+            <p className="workout-library-count">{catalog.length} exercises found · ${exerciseLibrary.length} total</p>
             <div className="workout-library-items">{catalog.map(e => <button type="button" key={e.id} onClick={() => {
               setActive(previous => previous && ({ ...previous, exercises: [...previous.exercises, makeExercise(e)] }))
               setShowLibrary(false)
-            }}>{e.name}<small>{e.muscle} · {e.equipment}</small></button>)}</div>
+            }}><span className="workout-exercise-thumb">
+                {['barbell-bench-press','incline-dumbbell-press','barbell-row','dumbbell-lateral-raise'].includes(e.id) ? <img src={'/exercises/' + e.id + '.webp'} alt={e.name + ' movement demonstration'} loading="lazy" onError={event => { event.currentTarget.style.display = 'none' }} /> : <span aria-hidden="true">🏋️</span>}
+              </span><span className="workout-exercise-name">{e.name}<small>{e.muscle} · {e.equipment}</small></span><span className="workout-add-sign" aria-hidden="true">+</span></button>)}</div>
           </div>}
           <label className="workout-notes">Notes<textarea maxLength={1000} rows={2} value={active.notes} onChange={e => setActive({ ...active, notes: e.target.value })} placeholder="How did it feel?"/></label>
           <div className="workout-actions"><button className="workout-primary" disabled={busy || active.exercises.length === 0} type="button" onClick={() => void finishWorkout()}>Finish & save workout</button>
