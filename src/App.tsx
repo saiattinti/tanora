@@ -607,6 +607,51 @@ function App({ userId, userEmail, onSignOut }: Props) {
     if (success) closeFood()
   }
 
+  async function saveTemplateMeal(meal: SavedMeal): Promise<boolean> {
+    const success = await performCloudAction(async () => {
+      await saveMeal(userId, meal)
+      setTemplates(previous=>({...previous,meals:[meal,...previous.meals.filter(item=>item.id!==meal.id)]}))
+    }, 'Saved meal updated.')
+    return success
+  }
+
+  async function saveTemplateRecipe(recipe: SavedRecipe): Promise<boolean> {
+    const success = await performCloudAction(async () => {
+      await saveRecipe(userId, recipe)
+      setTemplates(previous=>({...previous,recipes:[recipe,...previous.recipes.filter(item=>item.id!==recipe.id)]}))
+    }, 'Saved recipe updated.')
+    return success
+  }
+
+  async function deleteTemplate(kind: 'meal'|'recipe', id:string): Promise<void> {
+    await performCloudAction(async () => {
+      if (kind==='meal') {
+        await deleteMeal(userId,id)
+        setTemplates(previous=>({...previous,meals:previous.meals.filter(item=>item.id!==id)}))
+      } else {
+        await deleteRecipe(userId,id)
+        setTemplates(previous=>({...previous,recipes:previous.recipes.filter(item=>item.id!==id)}))
+      }
+    }, 'Saved '+kind+' deleted. Past food logs remain unchanged.')
+  }
+
+  async function logMultipleFoodEntries(newEntries: Entry[]): Promise<boolean> {
+    if (!newEntries.length) return false
+    return await performCloudAction(async () => {
+      if(guest)saveGuestData({goals,entries:[...entries,...newEntries],favorites})
+      else await saveCloudEntries(userId!,newEntries)
+      setEntries(previous=>[...previous,...newEntries])
+    }, 'Saved meal logged successfully.')
+  }
+
+  async function logRecipeEntry(entry:Entry): Promise<boolean> {
+    return await performCloudAction(async ()=>{
+      if(guest)saveGuestData({goals,entries:[...entries,entry],favorites})
+      else await saveCloudEntry(userId!,entry)
+      setEntries(previous=>[...previous,entry])
+    }, 'Recipe logged to your food diary.')
+  }
+
   async function saveManualFood(food: Food, entry: Entry, remember: boolean, saveOnly: boolean) {
     entry = {...entry, eatenAt: logClock ? instantFor(entry.date, logClock) : null}
     const nextFavorites = remember
@@ -1085,6 +1130,21 @@ function App({ userId, userEmail, onSignOut }: Props) {
           {addingFood ? 'Cancel' : '+ Add Food'}
         </button>
       </section>
+
+      <NutritionTemplates
+        meals={templates.meals}
+        recipes={templates.recipes}
+        availableFoods={uniqueFoods([...favorites,...entries.map(entry=>entry.food).filter((food):food is Food=>Boolean(food)),...starterFoods])}
+        date={selectedDate}
+        time={logClock || localClock()}
+        busy={busy}
+        onSaveMeal={saveTemplateMeal}
+        onSaveRecipe={saveTemplateRecipe}
+        onDelete={deleteTemplate}
+        onLogMeal={logMultipleFoodEntries}
+        onLogRecipe={logRecipeEntry}
+      />
+      {templateError && <p className="form-description" role="alert">Saved meals and recipes: {templateError}</p>}
 
       {quickLogEntries.length > 0 && !addingFood && (
         <section className="card quick-log-section">
