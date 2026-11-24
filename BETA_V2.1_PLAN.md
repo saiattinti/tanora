@@ -1,6 +1,6 @@
 # Tanora Beta 2.1 | Quality of Life Update
 
-Status: PHASE 1 (BETA 2.1.1) CODE COMMITTED, NOT YET TESTED. PHASES 2–4 NOT STARTED.
+Status: PHASE 1 (BETA 2.1.1) LOCALLY USER-TESTED; PHASE 2 (BETA 2.1.2) CODE COMMITTED BUT LINT/BUILD AND DEVICE TESTS PENDING. PHASES 3–4 NOT STARTED.
 Base release: `v2.0.0-beta` (`main` as of branch creation)
 Development branch: `feature/beta-v2.1-quality-of-life`
 
@@ -59,6 +59,8 @@ Implementation checkpoint: See `BETA_V2.1.1_TESTING.md`. Changes are committed o
 Acceptance: 2.0 logs remain readable; a workout can be edited and resaved; drafts restore after refresh; prefilled values never auto-complete sets; warm-up classification does not distort PRs.
 
 ## Phase 2 | Workout utilities (features 1, 9, 10)
+
+Implementation checkpoint: See `BETA_V2.1.2_TESTING.md` for the three gym-utility features, limits, and tests. Code is on the 2.1 development branch only; there has been no production deployment.
 
 **Built-in rest timer**
 - Presets: 60, 90, 120, 180 seconds; custom duration.
