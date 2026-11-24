@@ -1,6 +1,6 @@
 # Tanora Beta 2.1 | Quality of Life Update
 
-Status: PHASE 1 (BETA 2.1.1) LOCALLY USER-TESTED; PHASE 2 (BETA 2.1.2) LINT/BUILD PASSED, FEATURE TESTS PENDING; PHASE 3 (BETA 2.1.3) CODE COMMITTED, TESTS AND ADDITIVE SQL MIGRATION PENDING. PHASE 4 NOT STARTED.
+Status: PHASE 1 (2.1.1) LOCALLY USER-TESTED; PHASE 2 (2.1.2) LINT/BUILD PASSED; PHASE 3 (2.1.3) USER REPORTS BASIC FUNCTIONALITY WORKING, ADDITIVE SQL MIGRATION APPLIED; PHASE 3 RECIPE-IN-MEAL IMPROVEMENT AND PHASE 4 (2.1.4) COMMITTED BUT NOT YET LOCALLY BUILT OR TESTED. PRODUCTION REMAINS 2.0.
 Base release: `v2.0.0-beta` (`main` as of branch creation)
 Development branch: `feature/beta-v2.1-quality-of-life`
 
@@ -85,6 +85,12 @@ Acceptance: timer accurate after app is backgrounded; plate calculator results a
 
 Implementation checkpoint: See `BETA_V2.1.3_TESTING.md` for saved meals, recipes, timestamps, and the separate additive Supabase migration. Code is committed on the development branch only; no migration has been applied and production is unchanged.
 
+**Saved recipes inside meals (2.1.3 follow-up)**
+- Add saved cooked recipes directly to a saved meal, with grams or servings selection, alongside existing foods.
+- Calculate per-100g recipe nutrition from the full cooked yield and store a snapshot inside the meal.
+- Changing the source recipe must never alter existing saved meals or historic diary entries.
+- See `BETA_V2.1.4_TESTING.md` for integrated tests.
+
 **Saved meals**
 - A named, reusable group of ingredients/foods with individual measured quantities.
 - Save, edit, rename, delete, and log a meal with an adjustable servings multiplier. Each logged component becomes a regular diary entry, with aggregate macros displayed.
@@ -115,6 +121,8 @@ Implementation checkpoint: See `BETA_V2.1.3_TESTING.md` for saved meals, recipes
 Acceptance: correctly total ingredients, adjust to 0.5/1.5 servings, repeat a saved meal, save a recipe by cooked weight, verify historic diaries are unchanged, and confirm timestamps are editable and diary entries sort earliest to latest (including ties and old entries without times).
 
 ## Phase 4 | Unified insights (feature 8)
+
+Implementation checkpoint: The dedicated Overview tab and seven-day aggregate display are now committed on the development branch. See `BETA_V2.1.4_TESTING.md`. Local lint/build, device and cloud regression tests are still required; no production release.
 
 **Weekly nutrition & workout overview**
 - Show rolling or calendar-aligned last 7 days, clearly label date range and local timezone.
