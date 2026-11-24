@@ -62,6 +62,31 @@ export function portionMacros(portions: IngredientPortion[]): NutritionGoals {
   }, {calories:0,protein:0,carbs:0,fat:0})
 }
 
+
+/**
+ * A reusable snapshot of the finished cooked recipe.
+ * Meals persist this food, so later edits/deletions of the source recipe
+ * cannot silently recalculate previously saved meals or diary entries.
+ */
+export function recipeAsFood(recipe: SavedRecipe): SavedFood {
+  if (!finitePositive(recipe.yieldGrams) || !finitePositive(recipe.portions)) {
+    throw new Error('Recipe has an invalid cooked yield or serving count.')
+  }
+  const totals = portionMacros(recipe.ingredients)
+  const multiplier = 100 / recipe.yieldGrams
+  return {
+    id: 'recipe-' + recipe.id,
+    name: recipe.name,
+    source: 'Tanora recipe',
+    unit: 'g',
+    servingSize: recipe.yieldGrams / recipe.portions,
+    calories: totals.calories * multiplier,
+    protein: totals.protein * multiplier,
+    carbs: totals.carbs * multiplier,
+    fat: totals.fat * multiplier,
+  }
+}
+
 export async function loadTemplates(userId: string | null): Promise<NutritionTemplates> {
   if (!userId) return readGuest()
   const [meals, recipes] = await Promise.all([
