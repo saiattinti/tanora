@@ -95,18 +95,11 @@ export function RestTimerPanel({ timer }: { timer: RestTimer }) {
 
 export function PlateCalculator({ unit }: { unit: WeightUnit }) {
   const sizes = plateSizes[unit]
-  const [target, setTarget] = useState('135')
-  const [bar, setBar] = useState('45')
+  // The parent remounts this calculator on a unit change, providing
+  // sensible unit-specific bar/target defaults without touching workout logs.
+  const [target, setTarget] = useState(unit === 'lb' ? '135' : '60')
+  const [bar, setBar] = useState(unit === 'lb' ? '45' : '20')
   const [inventory, setInventory] = useState<Record<WeightUnit, number[]>>({lb:[4,2,4,4,4,4,4],kg:[4,4,4,4,4,4,4]})
-  const [lastUnit, setLastUnit] = useState<WeightUnit>(unit)
-  // Plate targets represent physical weights; convert them when switching units.
-  // A different unit's plate inventory remains a separate list.
-  if (lastUnit !== unit) {
-    const factor=unit === 'kg' ? 1/2.20462262185 : 2.20462262185
-    setTarget(String(Number((Number(target)*factor).toFixed(2))))
-    setBar(String(Number((Number(bar)*factor).toFixed(2))))
-    setLastUnit(unit)
-  }
   const plates: Plate[] = sizes.map((weight,i)=>({weight,countPerSide:inventory[unit][i] ?? 0}))
   const total=Number(target), barWeight=Number(bar)
   const plan=Number.isFinite(total)&&Number.isFinite(barWeight)&&target.trim()!==''&&bar.trim()!==''
