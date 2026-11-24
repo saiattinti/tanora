@@ -71,7 +71,7 @@ export default function Root() {
         <button className={section === 'workouts' ? 'selected' : ''} type="button" onClick={() => setSection('workouts')}>🏋️ Workouts</button>
       </nav>
       {section === 'workouts' ? (
-        <WorkoutTracker userId={session?.user.id ?? null} onNutrition={() => setSection('nutrition')} />
+        <WorkoutTracker key={session?.user.id ?? 'guest'} userId={session?.user.id ?? null} onNutrition={() => setSection('nutrition')} />
       ) : <App
       key={session?.user.id ?? 'guest'}
       userId={session?.user.id ?? null}
