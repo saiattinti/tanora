@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { searchIngredients } from './usda'
 import type { SavedFood, SavedEntry, NutritionGoals } from './lib/nutritionStorage'
 import type { SavedMeal, SavedRecipe, IngredientPortion } from './lib/nutritionTemplates'
-import { portionMacros } from './lib/nutritionTemplates'
+import { portionMacros, recipeAsFood } from './lib/nutritionTemplates'
 import { instantFor, localClock } from './lib/foodTimes'
 import './NutritionTemplates.css'
 
@@ -42,6 +42,7 @@ export default function NutritionTemplates({
   const [error,setError]=useState('')
   const [multiplier,setMultiplier]=useState<Record<string,string>>({})
   const [recipeMode,setRecipeMode]=useState<Record<string,'grams'|'servings'>>({})
+  const [mealRecipeUnits,setMealRecipeUnits]=useState<Record<string,'grams'|'servings'>>({})
   const [expanded,setExpanded]=useState(false)
   const [mealTime,setMealTime]=useState(localClock)
   const [mealTimeEdited,setMealTimeEdited]=useState(false)
@@ -67,6 +68,27 @@ export default function NutritionTemplates({
   function add(food:SavedFood){
     setItems(old=>[...old,{id:crypto.randomUUID(),food:{...food},amount:food.servingSize??100}])
     setSearch('');setResults([]);setError('')
+  }
+  function addRecipeIngredient(recipe:SavedRecipe){
+    try {
+      // Saved as a food snapshot, not a live reference to the recipe.
+      const food=recipeAsFood(recipe)
+      const id=crypto.randomUUID()
+      setItems(old=>[...old,{id,food,amount:food.servingSize??100}])
+      setMealRecipeUnits(old=>({...old,[id]:'servings'}))
+      setSearch('');setError('')
+    }catch(e){setError(e instanceof Error?e.message:'Could not add recipe.')}
+  }
+  function ingredientAmount(part:IngredientPortion):number {
+    const size=part.food.servingSize??100
+    return part.food.source==='Tanora recipe' && mealRecipeUnits[part.id]==='servings'
+      ? Number((part.amount/size).toFixed(4)):part.amount
+  }
+  function editIngredientAmount(part:IngredientPortion, raw:string){
+    const value=raw.trim()===''?0:Number(raw)
+    const byServings=part.food.source==='Tanora recipe' && mealRecipeUnits[part.id]==='servings'
+    const next=byServings?value*(part.food.servingSize??100):value
+    setItems(old=>old.map(item=>item.id===part.id?{...item,amount:next}:item))
   }
   async function doSearch(){
     if(!search.trim()||searching)return
@@ -113,8 +135,7 @@ export default function NutritionTemplates({
     if(grams>100000){setError('Maximum log amount is 100,000 grams.');return}
     const batch=portionMacros(recipe.ingredients)
     const per100=scaleMacros(batch,100/recipe.yieldGrams)
-    const food:SavedFood={id:'recipe-'+recipe.id,name:recipe.name,source:'Tanora recipe',
-      unit:'g',servingSize:recipe.yieldGrams/recipe.portions,...per100}
+    const food=recipeAsFood(recipe)
     const entry:SavedEntry={id:crypto.randomUUID(),name:food.name,date,eatenAt:instantFor(date,logTime()),
       grams,unit:'g',food,...scaleMacros(per100,grams/100)}
     if(await onLogRecipe(entry))setError('')
@@ -136,12 +157,28 @@ export default function NutritionTemplates({
       {editingOpen&&<div className="template-editor">
         <h3>{editing?'Edit':'Create'} {kind==='meal'?'meal':'recipe'}</h3>
         <label>Name<input value={name} maxLength={80} placeholder={kind==='meal'?'e.g. Usual Lunch':'e.g. Chicken Curry'} onChange={e=>setName(e.target.value)}/></label>
-        <p className="form-description">Select a past food or favorite, or search USDA. Amounts are based on each ingredient’s own nutrition snapshot.</p>
+        <p className="form-description">Select past foods, favorites, or search USDA. Saved recipes can be used directly in meals by cooked grams or servings. Nutrition is saved as a snapshot.</p>
+        {kind==='meal'&&recipes.length>0&&<div className="template-recipe-picker">
+          <strong>Add a saved recipe to this meal</strong>
+          <div className="template-food-picks">
+            {recipes.map(recipe=><button key={recipe.id} type="button" onClick={()=>addRecipeIngredient(recipe)}>
+              + {recipe.name} <small>({Number((recipe.yieldGrams/recipe.portions).toFixed(1))} g per serving)</small>
+            </button>)}
+          </div>
+        </div>}
         <div className="template-search"><input type="search" placeholder="Search an ingredient..." value={search} onChange={e=>setSearch(e.target.value)}/>
           <button type="button" className="add-button" disabled={searching||!search.trim()} onClick={()=>void doSearch()}>{searching?'Searching':'USDA Search'}</button></div>
         <div className="template-food-picks">{[...availableFoods.filter(f=>f.name.toLowerCase().includes(search.toLowerCase())).slice(0,8),...results].filter((f,i,all)=>all.findIndex(e=>e.id===f.id)===i).slice(0,20).map(food=><button key={food.id} type="button" onClick={()=>add(food)}>+ {food.name} <small>({Math.round(food.calories)} kcal/100 {food.unit??'g'})</small></button>)}</div>
         {items.map((part,i)=><div className="template-ingredient" key={part.id}>
-          <span>{part.food.name}</span><label>Amount ({part.food.unit??'g'})<input type="number" min="0.1" step="any" value={part.amount} onChange={e=>setItems(old=>old.map(p=>p.id===part.id?{...p,amount:Number(e.target.value)}:p))}/></label>
+          <span>{part.food.name}{part.food.source==='Tanora recipe'&&<small className="template-recipe-label">Saved recipe · cooked portion</small>}</span>
+          <label>Amount
+            <input type="number" min="0.1" step="any" aria-label={part.food.name+' amount'} value={ingredientAmount(part)} onChange={e=>editIngredientAmount(part,e.target.value)}/>
+          </label>
+          {part.food.source==='Tanora recipe'&&kind==='meal'
+            ? <select aria-label={part.food.name+' portion unit'} value={mealRecipeUnits[part.id]??'grams'} onChange={e=>setMealRecipeUnits(old=>({...old,[part.id]:e.target.value as 'grams'|'servings'}))}>
+                <option value="grams">g cooked</option><option value="servings">Servings</option>
+              </select>
+            : <small className="template-ingredient-unit">{part.food.unit??'g'}</small>}
           <button type="button" className="delete-button" onClick={()=>setItems(old=>old.filter(p=>p.id!==part.id))}>Remove</button>
           <small>#{i+1}</small>
         </div>)}
