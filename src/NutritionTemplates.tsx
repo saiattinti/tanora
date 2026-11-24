@@ -3,7 +3,7 @@ import { searchIngredients } from './usda'
 import type { SavedFood, SavedEntry, NutritionGoals } from './lib/nutritionStorage'
 import type { SavedMeal, SavedRecipe, IngredientPortion } from './lib/nutritionTemplates'
 import { portionMacros } from './lib/nutritionTemplates'
-import { instantFor } from './lib/foodTimes'
+import { instantFor, localClock } from './lib/foodTimes'
 import './NutritionTemplates.css'
 
 type Kind = 'meal' | 'recipe'
@@ -20,7 +20,6 @@ type Props = {
   recipes: SavedRecipe[]
   availableFoods: SavedFood[]
   date:string
-  time:string
   busy:boolean
   onSaveMeal:(meal:SavedMeal)=>Promise<boolean>
   onSaveRecipe:(recipe:SavedRecipe)=>Promise<boolean>
@@ -29,7 +28,7 @@ type Props = {
   onLogRecipe:(entry:SavedEntry)=>Promise<boolean>
 }
 export default function NutritionTemplates({
-  meals,recipes,availableFoods,date,time,busy,onSaveMeal,onSaveRecipe,onDelete,onLogMeal,onLogRecipe,
+  meals,recipes,availableFoods,date,busy,onSaveMeal,onSaveRecipe,onDelete,onLogMeal,onLogRecipe,
 }:Props){
   const [kind,setKind]=useState<Kind>('meal')
   const [editing,setEditing]=useState<string|null>(null)
@@ -44,6 +43,7 @@ export default function NutritionTemplates({
   const [multiplier,setMultiplier]=useState<Record<string,string>>({})
   const [recipeMode,setRecipeMode]=useState<Record<string,'grams'|'servings'>>({})
   const [expanded,setExpanded]=useState(false)
+  const [mealTime,setMealTime]=useState(localClock)
   const [editingOpen,setEditingOpen]=useState(false)
   const existing=kind==='meal'?meals:recipes
   const totals=items.length?portionMacros(items):zero
@@ -95,7 +95,7 @@ export default function NutritionTemplates({
   async function logMeal(meal:SavedMeal){
     const factor=Number(multiplier[meal.id]??'1')
     if(!Number.isFinite(factor)||factor<=0||factor>100){setError('Enter a multiplier greater than zero.');return}
-    const at=instantFor(date,time)
+    const at=instantFor(date,mealTime)
     const entries:SavedEntry[]=meal.items.map(part=>{
       const amount=part.amount*factor
       return {id:crypto.randomUUID(),name:part.food.name,grams:amount,date,eatenAt:at,unit:part.food.unit??'g',
@@ -113,15 +113,19 @@ export default function NutritionTemplates({
     const per100=scaleMacros(batch,100/recipe.yieldGrams)
     const food:SavedFood={id:'recipe-'+recipe.id,name:recipe.name,source:'Tanora recipe',
       unit:'g',servingSize:recipe.yieldGrams/recipe.portions,...per100}
-    const entry:SavedEntry={id:crypto.randomUUID(),name:food.name,date,eatenAt:instantFor(date,time),
+    const entry:SavedEntry={id:crypto.randomUUID(),name:food.name,date,eatenAt:instantFor(date,mealTime),
       grams,unit:'g',food,...scaleMacros(per100,grams/100)}
     if(await onLogRecipe(entry))setError('')
   }
 
   return <section className="card template-section">
     <div className="template-heading"><div><h2>Saved Meals & Recipes</h2><p className="form-description">Build once, log again. Recipes calculate nutrition from cooked yield.</p></div>
-      <button type="button" className="add-button" onClick={()=>setExpanded(!expanded)}>{expanded?'Hide':'Open'}</button></div>
+      <button type="button" className="add-button" onClick={()=>{if(!expanded)setMealTime(localClock());setExpanded(!expanded)}}>{expanded?'Hide':'Open'}</button></div>
     {expanded&&<>
+      <label className="template-logtime">Log time (local)
+        <input type="time" value={mealTime} onChange={e=>setMealTime(e.target.value)}/>
+        <small>Defaults to the current time when opened. Change it to log an earlier meal.</small>
+      </label>
       <div className="template-tabs">
         <button type="button" className={kind==='meal'?'selected':''} onClick={()=>{setKind('meal');reset()}}>Saved Meals ({meals.length})</button>
         <button type="button" className={kind==='recipe'?'selected':''} onClick={()=>{setKind('recipe');reset()}}>Recipes ({recipes.length})</button>
