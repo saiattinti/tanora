@@ -202,3 +202,8 @@
   .nutrition-timeline-item{grid-template-columns:75px minmax(0,1fr)}
   .nutrition-time-col{font-size:10px}
 }
+
+/* Harmonize the shared top-level sections with the nutrition design when active. */
+body:has(.tanora-nutrition) .tanora-main-nav{background:#071a1b;border-color:#264948;gap:9px}
+body:has(.tanora-nutrition) .tanora-main-nav button{background:#153335;color:#d6eae5;border:1px solid #2b5551;border-radius:12px}
+body:has(.tanora-nutrition) .tanora-main-nav button.selected{background:linear-gradient(110deg,#0aaf97,#078c77);color:#fff;border-color:#12be9f}
