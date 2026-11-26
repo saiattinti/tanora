@@ -235,6 +235,9 @@ function App({ userId, userEmail, onSignOut }: Props) {
 
   const [editingGoals, setEditingGoals] = useState(false)
   const [addingFood, setAddingFood] = useState(false)
+  const [nutritionView, setNutritionView] = useState<'diary'|'search'|'saved'|'recipes'|'goals'>('diary')
+  const [addChooserOpen, setAddChooserOpen] = useState(false)
+  const [recipeHelpOpen, setRecipeHelpOpen] = useState(false)
   const [addMode, setAddMode] = useState<
     'ingredients' | 'barcode' | 'manual'
   >('ingredients')
@@ -523,6 +526,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
   function closeFood() {
     clearSearch()
     setAddingFood(false)
+    setNutritionView('diary')
     setEditingId(null)
     setEditingCustomFood(null)
     setEditingUnit('g')
@@ -682,6 +686,8 @@ function App({ userId, userEmail, onSignOut }: Props) {
   }
 
   function editSavedCustomFood(food: Food) {
+    setNutritionView('search')
+    setAddChooserOpen(false)
     setEditingCustomFood(food)
     setEditingId(null)
     setAddingFood(true)
@@ -750,6 +756,8 @@ function App({ userId, userEmail, onSignOut }: Props) {
   }
 
   function editFood(entry: Entry) {
+    setNutritionView('search')
+    setAddChooserOpen(false)
     let food = entry.food ??
       starterFoods.find(item => item.name === entry.name)
 
@@ -911,55 +919,70 @@ function App({ userId, userEmail, onSignOut }: Props) {
     )
   }
 
+
+  function openNutritionView(view: 'diary'|'search'|'saved'|'recipes'|'goals') {
+    setAddChooserOpen(false)
+    if (view !== 'search') {
+      closeFood()
+    } else {
+      setAddingFood(true)
+      setAddMode('ingredients')
+      setEditingId(null)
+      setEditingCustomFood(null)
+      clearSearch()
+      setQuery('')
+      setSelectedFood(null)
+      setSearchMode('ingredients')
+      setLogClock(localClock())
+      setTimeManuallySet(false)
+    }
+    setNutritionView(view)
+  }
+
+  function openLogger(mode: 'ingredients'|'barcode'|'manual') {
+    openNutritionView('search')
+    setAddMode(mode)
+    setAddChooserOpen(false)
+  }
+
+  const caloriePercent = goals.calories > 0 ? Math.max(0, Math.min(100, consumed.calories / goals.calories * 100)) : 0
+  const remainingCalories = goals.calories - consumed.calories
+
   return (
-    <div className="app">
-      <header className="header">
-        <div>
-          <p className="eyebrow">
-            TANORA · NUTRITION
-          </p>
-          <div className="tanora-heading">
-            <img src="/tanora-icon.svg" alt="" className="tanora-mark" />
-            <h1>Tanora</h1>
+    <div className="app tanora-nutrition">
+      <aside className="nutrition-sidebar" aria-label="Nutrition navigation">
+        <div className="nutrition-brand">
+          <img src="/tanora-icon.svg" alt="" />
+          <strong>Tanora</strong>
+        </div>
+        <p className="nutrition-sidebar-caption">NUTRITION</p>
+        <nav className="nutrition-side-links" aria-label="Nutrition tools">
+          <button type="button" className={nutritionView==='diary'?'active':''} onClick={()=>openNutritionView('diary')}>▤ <span>Food Diary</span></button>
+          <button type="button" className={nutritionView==='search'&&addMode==='ingredients'?'active':''} onClick={()=>openLogger('ingredients')}>⌕ <span>Ingredient Search</span></button>
+          <button type="button" className={nutritionView==='search'&&addMode==='barcode'?'active':''} onClick={()=>openLogger('barcode')}>▥ <span>Scan Barcode</span></button>
+          <button type="button" className={nutritionView==='search'&&addMode==='manual'?'active':''} onClick={()=>openLogger('manual')}>✎ <span>Manual Food</span></button>
+          <div className="nutrition-side-divider"/>
+          <button type="button" onClick={()=>openLogger('ingredients')}>☆ <span>Favorites</span></button>
+          <button type="button" className={nutritionView==='saved'?'active':''} onClick={()=>openNutritionView('saved')}>▱ <span>Saved Meals</span></button>
+          <button type="button" className={nutritionView==='recipes'?'active':''} onClick={()=>openNutritionView('recipes')}>♧ <span>Recipes</span></button>
+          <div className="nutrition-side-divider"/>
+          <button type="button" className={nutritionView==='goals'?'active':''} onClick={()=>openNutritionView('goals')}>◎ <span>Nutrition Goals</span></button>
+        </nav>
+      </aside>
+
+      <main className="nutrition-main">
+        <header className="nutrition-header">
+          <div className="nutrition-mobile-brand"><img src="/tanora-icon.svg" alt="" /><strong>Tanora</strong></div>
+          <div className="nutrition-header-copy">
+            <p className="eyebrow">TANORA / NUTRITION</p>
+            <h1>{nutritionView==='diary'?'Food Diary':nutritionView==='search'?'Add Food':nutritionView==='saved'?'Saved Meals':nutritionView==='recipes'?'Recipes':'Nutrition Goals'}</h1>
+            <p className="subtitle">{nutritionView==='diary'?'Your nutrition, clearly tracked.':nutritionView==='search'?'Search, scan, or log exactly what you ate.':nutritionView==='saved'?'Your repeatable combinations, one tap away.':nutritionView==='recipes'?'Cook once, portion precisely.':'Set targets that work for you.'}</p>
           </div>
-          <p className="subtitle">
-            Track your daily calories and macros.
-          </p>
-          <p className="subtitle">
-            {guest ? 'Guest Mode · Saved on this device only' : `Signed in: ${userEmail}`}
-          </p>
-        </div>
-
-        <div style={{
-          display: 'flex',
-          gap: 8,
-          flexWrap: 'wrap',
-        }}>
-          <button
-            className="settings-button"
-            disabled={busy}
-            onClick={() => void reload()}
-          >
-            {guest ? 'Reload' : 'Refresh'}
-          </button>
-
-          <button
-            className="settings-button"
-            disabled={busy}
-            onClick={() => setEditingGoals(previous => !previous)}
-          >
-            {editingGoals ? 'Close Goals' : 'Edit Goals'}
-          </button>
-
-          <button
-            className="settings-button"
-            disabled={busy}
-            onClick={() => void onSignOut()}
-          >
-            {guest ? 'Sign In / Create Account' : 'Sign Out'}
-          </button>
-        </div>
-      </header>
+          <div className="nutrition-header-actions">
+            <button type="button" className="nutrition-icon-button" onClick={()=>void reload()} disabled={busy} aria-label="Refresh nutrition">↻</button>
+            <button type="button" className="nutrition-icon-button" onClick={()=>void onSignOut()} aria-label={guest?'Sign in':'Sign out'} title={guest?'Sign In / Create Account':'Sign Out'}>◯</button>
+          </div>
+        </header>
 
       <div
         role="status"
@@ -976,6 +999,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
           </p>
         )}
       </div>
+
 
       {!guest && hasOldData && !importedAlready && (
         <section className="card" style={{ marginBottom: 20 }}>
@@ -1000,157 +1024,78 @@ function App({ userId, userEmail, onSignOut }: Props) {
         </section>
       )}
 
-      {editingGoals && (
-        <SmartGoals
-          current={goals}
-          onSave={updated => void saveGoals(updated)}
-          onCancel={() => setEditingGoals(false)}
-        />
-      )}
 
-      {!hasCloudGoals && (
-        <p className="form-description">
-          {guest ? 'Guest mode is using starter calorie goals.' : 'Your account is using starter calorie goals.'}
-          Select Edit Goals to save your own targets.
-        </p>
-      )}
 
-      <div className="date-navigation">
-        <button
-          onClick={() => changeDate(-1)}
-          aria-label="Previous day"
-        >
-          ←
-        </button>
-
-        <strong>{displayDate}</strong>
-
-        <button
-          onClick={() => changeDate(1)}
-          aria-label="Next day"
-        >
-          →
-        </button>
-      </div>
-
-      <section className="calorie-card">
-        <p className="card-label">Calories consumed</p>
-
-        <div className="calorie-number">
-          {Math.round(consumed.calories).toLocaleString()}
-          <span>
-            {' '}/ {Math.round(goals.calories).toLocaleString()} kcal
-          </span>
-        </div>
-
-        <p className="remaining">
-          {Math.round(
-            goals.calories - consumed.calories
-          ).toLocaleString()}
-          {' '}calories remaining
-        </p>
-
-        <div className="progress-track">
-          <div
-            className="progress-fill"
-            style={{
-              width: `${
-                Math.min(
-                  100,
-                  goals.calories > 0
-                    ? consumed.calories / goals.calories * 100
-                    : 0
-                )
-              }%`,
-            }}
-          />
-        </div>
-      </section>
-
-      <h2 className="section-title">Daily Macros</h2>
-
-      <section className="macro-grid">
-        {(['protein', 'carbs', 'fat'] as const).map(key => {
-          const value = consumed[key]
-          const target = goals[key]
-
-          return (
-            <div className="card macro-card" key={key}>
-              <div className="macro-heading">
-                <span>
-                  {key === 'carbs'
-                    ? 'Carbs'
-                    : key === 'fat'
-                      ? 'Fat'
-                      : 'Protein'}
-                </span>
-                <span
-                  className="macro-dot"
-                  style={{
-                    backgroundColor: nutrientColors[key],
-                  }}
-                />
+        {nutritionView==='diary' && <>
+          <div className="nutrition-date-row">
+            <button type="button" className="nutrition-date-arrow" aria-label="Previous day" onClick={()=>changeDate(-1)}>‹</button>
+            <div className="nutrition-date-label"><span>▦</span> {displayDate}</div>
+            <button type="button" className="nutrition-date-arrow" aria-label="Next day" onClick={()=>changeDate(1)}>›</button>
+            <button type="button" className="nutrition-today-button" onClick={()=>{setSelectedDate(dateKey(new Date()));closeFood()}}>Today</button>
+          </div>
+          <section className="nutrition-summary" aria-label="Daily nutrition summary">
+            <div className="nutrition-calorie-main">
+              <div className="nutrition-calorie-ring" role="img" aria-label={Math.round(caloriePercent)+' percent of calorie goal'} style={{background:`conic-gradient(#13d7ac ${caloriePercent}%, #194541 ${caloriePercent}% 100%)`}}>
+                <div className="nutrition-ring-inside">
+                  <strong>{Math.round(consumed.calories).toLocaleString()}</strong>
+                  <span>/ {Math.round(goals.calories).toLocaleString()} kcal</span>
+                </div>
               </div>
-
-              <div className="macro-value">
-                {value.toFixed(1)} g
-              </div>
-
-              <p className="macro-target">
-                Goal: {target.toFixed(1)} g
-              </p>
-
-              <div className="progress-track small">
-                <div
-                  className="progress-fill"
-                  style={{
-                    width: `${
-                      Math.min(
-                        100,
-                        target > 0 ? value / target * 100 : 0
-                      )
-                    }%`,
-                    backgroundColor: nutrientColors[key],
-                  }}
-                />
+              <div className="nutrition-calorie-caption">
+                <span>Daily Calories</span>
+                <strong>{remainingCalories>=0?Math.round(remainingCalories).toLocaleString()+' remaining':Math.round(-remainingCalories).toLocaleString()+' over goal'}</strong>
+                <small>{Math.round(caloriePercent)}% of daily goal</small>
               </div>
             </div>
-          )
-        })}
-      </section>
+            <div className="nutrition-macro-row">
+              {(['protein','carbs','fat'] as const).map(key=>(
+                <div className={'nutrition-macro-tile macro-'+key} key={key}>
+                  <span className="nutrition-macro-label">{key==='protein'?'◕':key==='carbs'?'✦':'◉'} {key==='protein'?'Protein':key==='carbs'?'Carbs':'Fat'}</span>
+                  <div className="nutrition-macro-numbers"><strong>{Math.round(consumed[key])} g</strong><span>/ {Math.round(goals[key])} g</span></div>
+                  <div className="nutrition-macro-track"><div style={{width:`${goals[key]>0?Math.min(100,consumed[key]/goals[key]*100):0}%`}}/></div>
+                </div>
+              ))}
+            </div>
+          </section>
 
-      <section className="card food-section">
-        <div>
-          <h2>Food Diary</h2>
-          <p>{dailyEntries.length} food entries</p>
-        </div>
+          <section className="nutrition-timeline-section">
+            <div className="nutrition-section-heading">
+              <h2>{selectedDate===dateKey(new Date())?"Today's Food Diary":"Food Diary"}</h2>
+              <span>{Math.round(consumed.calories).toLocaleString()} kcal · P {Math.round(consumed.protein)} g · C {Math.round(consumed.carbs)} g · F {Math.round(consumed.fat)} g</span>
+            </div>
+            <div className="nutrition-timeline">
+              {dailyEntries.map(entry=>(
+                <div className="nutrition-timeline-item" key={entry.id}>
+                  <div className="nutrition-time-col"><span className="nutrition-time-dot"/><time>{readableTime(entry.eatenAt)}</time></div>
+                  <article className="nutrition-entry-card">
+                    <div className="nutrition-entry-top">
+                      <div className="nutrition-entry-copy"><strong>{entry.name}</strong><small>{Number(entry.grams.toFixed(1))} {entry.unit??'g'} · {Math.round(entry.calories)} kcal</small></div>
+                      <details className="nutrition-entry-menu"><summary aria-label={'Options for '+entry.name}>•••</summary>
+                        <div className="nutrition-entry-menu-content">
+                          <button type="button" disabled={busy} onClick={()=>editFood(entry)}>Edit food / time</button>
+                          <button type="button" disabled={busy} onClick={()=>void repeatEntry(entry)}>Log again</button>
+                          <button type="button" disabled={busy} onClick={()=>{if(window.confirm('Delete this diary entry?'))void removeEntry(entry.id)}}>Delete</button>
+                        </div>
+                      </details>
+                    </div>
+                    <div className="nutrition-entry-macros"><span>P {entry.protein.toFixed(1)} g</span><span>C {entry.carbs.toFixed(1)} g</span><span>F {entry.fat.toFixed(1)} g</span></div>
+                  </article>
+                </div>
+              ))}
+              {dailyEntries.length===0&&<div className="nutrition-empty-diary">
+                <strong>No food logged for this date</strong><p>When you add food, it will appear here in time order.</p>
+              </div>}
+            </div>
+          </section>
+          <button type="button" className="nutrition-primary-add" onClick={()=>setAddChooserOpen(true)}>＋ Add Food</button>
+          <div className="nutrition-diary-shortcuts">
+            <button type="button" onClick={()=>openNutritionView('saved')}>▱ <span>Saved Meals</span></button>
+            <button type="button" onClick={()=>openNutritionView('recipes')}>♧ <span>Recipes</span></button>
+          </div>
+        </>}
 
-        <button
-          className="add-button"
-          disabled={busy}
-          onClick={() =>
-            addingFood ? closeFood() : (setLogClock(localClock()),setTimeManuallySet(false),setAddingFood(true))
-          }
-        >
-          {addingFood ? 'Cancel' : '+ Add Food'}
-        </button>
-      </section>
-
-      <NutritionTemplates
-        meals={templates.meals}
-        recipes={templates.recipes}
-        availableFoods={uniqueFoods([...favorites,...entries.map(entry=>entry.food).filter((food):food is Food=>Boolean(food)),...starterFoods])}
-        date={selectedDate}
-        busy={busy}
-        onSaveMeal={saveTemplateMeal}
-        onSaveRecipe={saveTemplateRecipe}
-        onDelete={deleteTemplate}
-        onLogMeal={logMultipleFoodEntries}
-        onLogRecipe={logRecipeEntry}
-      />
-      {templateError && <p className="form-description" role="alert">Saved meals and recipes: {templateError}</p>}
-
-      {quickLogEntries.length > 0 && !addingFood && (
+        {nutritionView==='search' && <section className="nutrition-search-screen">
+                {quickLogEntries.length > 0 && !editingId && addMode==='ingredients' && (
         <section className="card quick-log-section">
           <div>
             <h2>Quick Log</h2>
@@ -1175,7 +1120,8 @@ function App({ userId, userEmail, onSignOut }: Props) {
         </section>
       )}
 
-      {addingFood && (
+
+                {addingFood && (
         <section className="card food-form">
           <h2>{editingId ? 'Edit Food' : 'Add Food'}</h2>
           <label className="diary-time-picker">Time eaten (local time)
@@ -1522,59 +1468,69 @@ function App({ userId, userEmail, onSignOut }: Props) {
         </section>
       )}
 
-      {dailyEntries.length > 0 && (
-        <section className="card diary-list">
-          <h2>Logged Foods</h2>
 
-          {dailyEntries.map(entry => (
-            <div className="diary-entry" key={entry.id}>
-              <div className="diary-info">
-                <strong>{entry.name}</strong>
-                <small className="diary-timestamp">{readableTime(entry.eatenAt)}</small>
-                <p>
-                  {Math.round(entry.grams * 10) / 10}
-                  {' '}{entry.unit ?? 'g'} ·{' '}
-                  {Math.round(entry.calories)} kcal
-                </p>
-                <small>
-                  P: {entry.protein.toFixed(1)} g ·{' '}
-                  C: {entry.carbs.toFixed(1)} g ·{' '}
-                  F: {entry.fat.toFixed(1)} g
-                </small>
-              </div>
+        </section>}
 
-              <div className="diary-actions">
-                <button
-                  disabled={busy}
-                  onClick={() => editFood(entry)}
-                >
-                  Edit
-                </button>
+        {(nutritionView==='saved' || nutritionView==='recipes') && <div className="nutrition-library">
+          <p className="nutrition-library-intro">{nutritionView==='saved'?'Combine foods and cooked recipes, then log the entire combination in one go.':'Build recipes using ingredients and a cooked yield, then log by grams or servings.'}</p>
+          <button type="button" className="nutrition-info-link" onClick={()=>setRecipeHelpOpen(true)}>ⓘ What's the difference between Saved Meals and Recipes?</button>
+          <NutritionTemplates
+            key={nutritionView}
+            initialKind={nutritionView==='recipes'?'recipe':'meal'}
+            meals={templates.meals}
+            recipes={templates.recipes}
+            availableFoods={uniqueFoods([...favorites,...entries.map(entry=>entry.food).filter((food):food is Food=>Boolean(food)),...starterFoods])}
+            date={selectedDate}
+            busy={busy}
+            onSaveMeal={saveTemplateMeal}
+            onSaveRecipe={saveTemplateRecipe}
+            onDelete={deleteTemplate}
+            onLogMeal={logMultipleFoodEntries}
+            onLogRecipe={logRecipeEntry}
+          />
+          {templateError&&<p className="search-error" role="alert">{templateError}</p>}
+        </div>}
 
-                <button
-                  disabled={busy}
-                  onClick={() => void repeatEntry(entry)}
-                  title="Add another copy of this food today"
-                >
-                  Repeat
-                </button>
+        {nutritionView==='goals'&&<section className="nutrition-goals-screen">
+          <div className="card">
+            <h2>Daily targets</h2>
+            <p className="form-description">Calories {Math.round(goals.calories)} · Protein {Math.round(goals.protein)} g · Carbs {Math.round(goals.carbs)} g · Fat {Math.round(goals.fat)} g</p>
+            <button type="button" className="add-button" onClick={()=>setEditingGoals(value=>!value)}>{editingGoals?'Close goal editor':'Edit goals'}</button>
+          </div>
+          {editingGoals&&<SmartGoals current={goals} onSave={updated=>void saveGoals(updated)} onCancel={()=>setEditingGoals(false)}/>}
+          {!hasCloudGoals&&<p className="form-description">You're currently using starter goals. Save your own targets above.</p>}
+        </section>}
+        <p className="footer-note">Tanora · {guest?'Guest Mode (local only)':'Account Cloud Sync'}</p>
+      </main>
 
-                <button
-                  className="delete-button"
-                  disabled={busy}
-                  onClick={() => void removeEntry(entry.id)}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+      <nav className="nutrition-mobile-tabs" aria-label="Nutrition mobile navigation">
+        <button type="button" className={nutritionView==='diary'?'active':''} onClick={()=>openNutritionView('diary')}><span>▤</span>Diary</button>
+        <button type="button" className={nutritionView==='search'?'active':''} onClick={()=>openLogger('ingredients')}><span>⌕</span>Search</button>
+        <button type="button" className={nutritionView==='saved'?'active':''} onClick={()=>openNutritionView('saved')}><span>▱</span>Saved</button>
+        <button type="button" className={nutritionView==='recipes'?'active':''} onClick={()=>openNutritionView('recipes')}><span>♧</span>Recipes</button>
+        <button type="button" className={nutritionView==='goals'?'active':''} onClick={()=>openNutritionView('goals')}><span>◎</span>Goals</button>
+      </nav>
+
+      {addChooserOpen && <div className="nutrition-sheet-backdrop" role="presentation" onClick={()=>setAddChooserOpen(false)}>
+        <section className="nutrition-action-sheet" role="dialog" aria-modal="true" aria-label="Choose how to add food" onClick={event=>event.stopPropagation()}>
+          <div className="nutrition-sheet-handle"/>
+          <div className="nutrition-sheet-title"><h2>Add Food</h2><button type="button" onClick={()=>setAddChooserOpen(false)} aria-label="Close">×</button></div>
+          <button type="button" onClick={()=>openLogger('ingredients')}>⌕ <span>Search Food</span> <b>›</b></button>
+          <button type="button" onClick={()=>openLogger('barcode')}>▥ <span>Scan Barcode</span> <b>›</b></button>
+          <button type="button" onClick={()=>openLogger('manual')}>✎ <span>Manual Food</span> <b>›</b></button>
+          <button type="button" onClick={()=>openNutritionView('saved')}>▱ <span>Saved Meal</span> <b>›</b></button>
+          <button type="button" onClick={()=>openNutritionView('recipes')}>♧ <span>Recipe</span> <b>›</b></button>
         </section>
-      )}
-
-      <p className="footer-note">
-        Tanora · {guest ? 'Guest Mode (local only)' : 'Account Cloud Sync'}
-      </p>
+      </div>}
+      {recipeHelpOpen&&<div className="nutrition-sheet-backdrop" role="presentation" onClick={()=>setRecipeHelpOpen(false)}>
+        <section className="nutrition-help-dialog" role="dialog" aria-modal="true" aria-label="Saved meals and recipes explained" onClick={event=>event.stopPropagation()}>
+          <div className="nutrition-sheet-title"><h2>Saved Meals vs. Recipes</h2><button type="button" onClick={()=>setRecipeHelpOpen(false)} aria-label="Close">×</button></div>
+          <p><strong>Saved Meal:</strong> A reusable combination of foods and recipes, each with its own portion. One action logs the whole combination.</p>
+          <p><strong>Recipe:</strong> A cooked dish assembled from ingredients, with a finished weight. Log it by cooked grams or servings.</p>
+          <p>Yes, you can add a recipe inside a saved meal.</p>
+          <button type="button" className="add-button" onClick={()=>setRecipeHelpOpen(false)}>Got it</button>
+        </section>
+      </div>}
     </div>
   )
 }
