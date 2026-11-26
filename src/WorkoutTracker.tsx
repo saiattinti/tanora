@@ -9,6 +9,7 @@ import type { WeightUnit } from './lib/workoutUnits'
 import { RestTimerPanel, PlateCalculator } from './WorkoutUtilities'
 import { useRestTimer } from './lib/useRestTimer'
 import './WorkoutTracker.css'
+import './TanoraModules.css'
 
 type View = 'log' | 'routines' | 'history' | 'progress' | 'tools'
 const dateToday = () => {
@@ -329,15 +330,24 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
   if (!ready) return <section className="workout-panel card"><h2>Workout tracker</h2><p>{error || 'Loading your workouts...'}</p></section>
 
   return (
-    <div className="workout-app">
+    <div className="workout-app tanora-workout-theme">
+      <aside className="tanora-module-sidebar">
+        <div className="tanora-module-brand"><img src="/tanora-icon.svg" alt="" /><strong>Tanora</strong></div>
+        <p className="tanora-module-sidebar-label">WORKOUTS</p>
+      <nav className="workout-nav" aria-label="Workout sections">
+        {(['log', 'routines', 'history', 'progress', 'tools'] as View[]).map(tab =>
+          <button key={tab} className={view === tab ? 'active' : ''} type="button" onClick={() => setView(tab)}>
+            <span className="tanora-tab-icon" aria-hidden="true">{tab === 'log' ? '▤' : tab === 'routines' ? '▱' : tab === 'history' ? '◷' : tab === 'progress' ? '↗' : '⚙'}</span>
+            <span>{tab === 'log' ? 'Log' : tab === 'routines' ? 'Routines' : tab === 'history' ? 'History' : tab === 'progress' ? 'Progress' : 'Tools'}</span>
+          </button>)}
+      </nav>
+
+      </aside>
+      <div className="tanora-module-main">
       <header className="workout-heading">
         <div><p className="eyebrow">TANORA 2.1 DEVELOPMENT</p><h1>Workout Tracker</h1><p className="subtitle">Train, log, and grow stronger.</p></div>
         <div className="workout-header-actions"><label className="workout-unit-select">Weight unit <select aria-label="Workout weight unit" value={unit} onChange={e => changeUnit(e.target.value as WeightUnit)}><option value="lb">lb</option><option value="kg">kg</option></select></label><button className="settings-button" type="button" onClick={onNutrition}>Nutrition ↗</button></div>
       </header>
-      <nav className="workout-nav" aria-label="Workout sections">
-        {(['log', 'routines', 'history', 'progress', 'tools'] as View[]).map(tab =>
-          <button key={tab} className={view === tab ? 'active' : ''} type="button" onClick={() => setView(tab)}>{tab === 'log' ? 'Log' : tab === 'routines' ? 'Routines' : tab === 'history' ? 'History' : tab === 'progress' ? 'Progress' : 'Tools'}</button>)}
-      </nav>
       {error && <p className="workout-error" role="alert">{error} <button type="button" onClick={() => setError('')}>Dismiss</button></p>}
       {message && <p className="workout-success" role="status">{message}</p>}
       {draftError && <p className="workout-error" role="alert">{draftError}</p>}
@@ -440,6 +450,14 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
       </section>}
       {view === 'tools' && <section className="card workout-panel"><h2>Gym tools</h2><RestTimerPanel timer={restTimer}/><PlateCalculator key={unit} unit={unit}/></section>}
       <p className="footer-note">{userId ? 'Workouts sync to your Tanora account.' : 'Guest workouts are saved only in this browser.'} Workout weights are stored internally in pounds, and displayed in {unit}.</p>
+      </div>
+      <nav className="tanora-module-mobile-nav" aria-label="Workout mobile sections">
+        {(['log','routines','history','progress','tools'] as View[]).map(tab=>
+          <button key={tab} type="button" className={view===tab?'active':''} onClick={()=>setView(tab)}>
+            <span aria-hidden="true">{tab==='log'?'▤':tab==='routines'?'▱':tab==='history'?'◷':tab==='progress'?'↗':'⚙'}</span>
+            {tab==='log'?'Log':tab==='routines'?'Routines':tab==='history'?'History':tab==='progress'?'Progress':'Tools'}
+          </button>)}
+      </nav>
     </div>
   )
 }
