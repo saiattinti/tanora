@@ -20,6 +20,7 @@ type Props = {
   recipes: SavedRecipe[]
   availableFoods: SavedFood[]
   date:string
+  initialKind?: Kind
   busy:boolean
   onSaveMeal:(meal:SavedMeal)=>Promise<boolean>
   onSaveRecipe:(recipe:SavedRecipe)=>Promise<boolean>
@@ -28,9 +29,9 @@ type Props = {
   onLogRecipe:(entry:SavedEntry)=>Promise<boolean>
 }
 export default function NutritionTemplates({
-  meals,recipes,availableFoods,date,busy,onSaveMeal,onSaveRecipe,onDelete,onLogMeal,onLogRecipe,
+  meals,recipes,availableFoods,date,initialKind='meal',busy,onSaveMeal,onSaveRecipe,onDelete,onLogMeal,onLogRecipe,
 }:Props){
-  const [kind,setKind]=useState<Kind>('meal')
+  const [kind,setKind]=useState<Kind>(initialKind)
   const [editing,setEditing]=useState<string|null>(null)
   const [name,setName]=useState('')
   const [items,setItems]=useState<IngredientPortion[]>([])
@@ -43,7 +44,7 @@ export default function NutritionTemplates({
   const [multiplier,setMultiplier]=useState<Record<string,string>>({})
   const [recipeMode,setRecipeMode]=useState<Record<string,'grams'|'servings'>>({})
   const [mealRecipeUnits,setMealRecipeUnits]=useState<Record<string,'grams'|'servings'>>({})
-  const [expanded,setExpanded]=useState(false)
+  const [expanded,setExpanded]=useState(true)
   const [mealTime,setMealTime]=useState(localClock)
   const [mealTimeEdited,setMealTimeEdited]=useState(false)
   const logTime=()=>mealTimeEdited && mealTime ? mealTime : localClock()
