@@ -152,3 +152,8 @@ Weight/body measurements, DEXA, progress photos and recovery tracking stay in 3.
 ## Pre-release Design Pass | iPhone-first Nutrition UI
 
 The user selected the first iPhone timeline preview as the single design direction for iPhone and desktop web. The development branch now contains the responsive nutrition redesign with a desktop sidebar, mobile tab bar, daily calorie ring, macro tiles and timestamp-based food cards. It preserves search, manual/barcode, favorites, Quick Log, saved meals/recipes and goals, without requiring food photos or fixed breakfast/lunch/dinner headings. The saved meal vs recipe explainer is available only when requested. **See `BETA_V2.1_UI_REDESIGN_TESTING.md`**. No production deploy or extra SQL migration was performed. Need lint/build, visual and regression checks before release.
+
+
+## Pre-release Visual Consistency | Workout and Overview
+
+The user approved the overall Nutrition redesign and requested the same visual system for Workouts and Overview. The development branch now contains `src/TanoraModules.css`, emerald-themed desktop sidebars and iPhone bottom feature navigation for those modules. Core workout functions and overview aggregates remain unchanged. See `BETA_V2.1_UNIFIED_DESIGN_TESTING.md`. **Mac lint/build and visual regression are pending. Production remains Beta 2.0.**
