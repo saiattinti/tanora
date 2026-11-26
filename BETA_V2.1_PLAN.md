@@ -1,6 +1,6 @@
 # Tanora Beta 2.1 | Quality of Life Update
 
-Status: PHASE 1 (2.1.1) LOCALLY USER-TESTED; PHASE 2 (2.1.2) LINT/BUILD PASSED; PHASE 3 (2.1.3) USER REPORTS BASIC FUNCTIONALITY WORKING, ADDITIVE SQL MIGRATION APPLIED; PHASE 3 RECIPE-IN-MEAL IMPROVEMENT AND PHASE 4 (2.1.4) COMMITTED BUT NOT YET LOCALLY BUILT OR TESTED. PRODUCTION REMAINS 2.0.
+Status: BETA 2.1.1–2.1.4 FUNCTIONAL TESTS PASSED BY USER LOCALLY (NOV 25). iPHONE-FIRST NUTRITION REDESIGN CODE NOW COMMITTED, LINT/BUILD AND VISUAL TESTING PENDING. PRODUCTION REMAINS 2.0.
 Base release: `v2.0.0-beta` (`main` as of branch creation)
 Development branch: `feature/beta-v2.1-quality-of-life`
 
@@ -147,3 +147,8 @@ Acceptance: results match the actual diary and workout history, date boundaries 
 ## Explicitly deferred
 
 Weight/body measurements, DEXA, progress photos and recovery tracking stay in 3.0. Personal Response Engine, Decision Memory, Tanora Experiments, adaptive planning and Progress Replay stay in 4.0.
+
+
+## Pre-release Design Pass | iPhone-first Nutrition UI
+
+The user selected the first iPhone timeline preview as the single design direction for iPhone and desktop web. The development branch now contains the responsive nutrition redesign with a desktop sidebar, mobile tab bar, daily calorie ring, macro tiles and timestamp-based food cards. It preserves search, manual/barcode, favorites, Quick Log, saved meals/recipes and goals, without requiring food photos or fixed breakfast/lunch/dinner headings. The saved meal vs recipe explainer is available only when requested. **See `BETA_V2.1_UI_REDESIGN_TESTING.md`**. No production deploy or extra SQL migration was performed. Need lint/build, visual and regression checks before release.
