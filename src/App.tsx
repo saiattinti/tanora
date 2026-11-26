@@ -28,6 +28,7 @@ import type {
 } from './lib/nutritionStorage'
 import { readGuestData, saveGuestData } from './lib/guestStorage'
 import './App.css'
+import './NutritionRedesign.css'
 
 type Food = USDAFood
 type Entry = SavedEntry
@@ -65,12 +66,6 @@ const starterFoods: Food[] = [
   { id: '11', name: 'Broccoli, cooked', source: 'Starter estimate', calories: 35, protein: 2.4, carbs: 7.2, fat: 0.4 },
   { id: '12', name: 'Salmon, cooked', source: 'Starter estimate', calories: 206, protein: 22.1, carbs: 0, fat: 12.4 },
 ]
-
-const nutrientColors = {
-  protein: '#4285f4',
-  carbs: '#e6a23c',
-  fat: '#a855f7',
-}
 
 function dateKey(date: Date) {
   const year = date.getFullYear()
