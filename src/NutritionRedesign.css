@@ -207,3 +207,7 @@
 body:has(.tanora-nutrition) .tanora-main-nav{background:#071a1b;border-color:#264948;gap:9px}
 body:has(.tanora-nutrition) .tanora-main-nav button{background:#153335;color:#d6eae5;border:1px solid #2b5551;border-radius:12px}
 body:has(.tanora-nutrition) .tanora-main-nav button.selected{background:linear-gradient(110deg,#0aaf97,#078c77);color:#fff;border-color:#12be9f}
+
+.nutrition-library-date{display:flex;align-items:center;flex-wrap:wrap;gap:9px;color:#bcd6ce;font-size:12px;margin:0 0 11px}
+.nutrition-library-date strong{color:#e4f9f0}
+.nutrition-library-date button{background:transparent;color:#5ff4cb;padding:4px 2px;text-decoration:underline;text-underline-offset:3px;font-size:12px}
