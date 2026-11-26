@@ -151,3 +151,23 @@
   .tanora-workout-theme .workout-set{gap:4px}
   .tanora-workout-theme .workout-set input[type=number]{padding:8px 3px}
 }
+
+/* Unify the top-level section switcher across the redesigned modules. */
+body:has(.tanora-workout-theme) .tanora-main-nav,
+body:has(.tanora-overview-theme) .tanora-main-nav{
+  background:#071a1b;border-color:#264948;gap:9px;
+}
+body:has(.tanora-workout-theme) .tanora-main-nav button,
+body:has(.tanora-overview-theme) .tanora-main-nav button{
+  background:#153335;color:#d6eae5;border:1px solid #2b5551;border-radius:12px;
+}
+body:has(.tanora-workout-theme) .tanora-main-nav button.selected,
+body:has(.tanora-overview-theme) .tanora-main-nav button.selected{
+  background:linear-gradient(110deg,#0aaf97,#078c77);color:#fff;border-color:#12be9f;
+}
+@media(max-width:720px){
+  body:has(.tanora-workout-theme) .tanora-main-nav,
+  body:has(.tanora-overview-theme) .tanora-main-nav{gap:5px;padding:9px 10px}
+  body:has(.tanora-workout-theme) .tanora-main-nav button,
+  body:has(.tanora-overview-theme) .tanora-main-nav button{font-size:12px;padding:11px 4px}
+}
