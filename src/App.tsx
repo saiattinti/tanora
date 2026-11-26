@@ -1468,6 +1468,7 @@ function App({ userId, userEmail, onSignOut }: Props) {
 
         {(nutritionView==='saved' || nutritionView==='recipes') && <div className="nutrition-library">
           <p className="nutrition-library-intro">{nutritionView==='saved'?'Combine foods and cooked recipes, then log the entire combination in one go.':'Build recipes using ingredients and a cooked yield, then log by grams or servings.'}</p>
+          <p className="nutrition-library-date">Logging to: <strong>{displayDate}</strong> <button type="button" onClick={()=>openNutritionView('diary')}>Change date in Diary</button></p>
           <button type="button" className="nutrition-info-link" onClick={()=>setRecipeHelpOpen(true)}>ⓘ What's the difference between Saved Meals and Recipes?</button>
           <NutritionTemplates
             key={nutritionView}
