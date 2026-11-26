@@ -75,8 +75,10 @@ export default function WeeklyOverview({userId}:{userId:string|null}) {
   },[userId])
 
   useEffect(()=>{
-    // The component is keyed per account and mounted only when Overview is opened.
-    void refresh()
+    // Schedule the initial data load after the effect completes, rather than
+    // synchronously setting loading state during an effect.
+    const scheduled = window.setTimeout(() => { void refresh() }, 0)
+    return () => window.clearTimeout(scheduled)
   },[refresh])
   useEffect(()=>{
     const check=()=>{
