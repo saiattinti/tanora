@@ -31,7 +31,7 @@ type Props = {
 export default function NutritionTemplates({
   meals,recipes,availableFoods,date,initialKind='meal',busy,onSaveMeal,onSaveRecipe,onDelete,onLogMeal,onLogRecipe,
 }:Props){
-  const [kind,setKind]=useState<Kind>(initialKind)
+  const [kind,setKind]=useState<Kind>(initialKind??'meal')
   const [editing,setEditing]=useState<string|null>(null)
   const [name,setName]=useState('')
   const [items,setItems]=useState<IngredientPortion[]>([])
@@ -144,16 +144,16 @@ export default function NutritionTemplates({
 
   return <section className="card template-section">
     <div className="template-heading"><div><h2>Saved Meals & Recipes</h2><p className="form-description">Build once, log again. Recipes calculate nutrition from cooked yield.</p></div>
-      <button type="button" className="add-button" onClick={()=>{if(!expanded){setMealTime(localClock());setMealTimeEdited(false)}setExpanded(!expanded)}}>{expanded?'Hide':'Open'}</button></div>
+      {!initialKind&&<button type="button" className="add-button" onClick={()=>{if(!expanded){setMealTime(localClock());setMealTimeEdited(false)}setExpanded(!expanded)}}>{expanded?'Hide':'Open'}</button>}</div>
     {expanded&&<>
       <label className="template-logtime">Log time (local)
         <input type="time" value={mealTime} onChange={e=>{setMealTime(e.target.value);setMealTimeEdited(true)}}/>
         <small>Defaults to the time you log the meal. Change it to log an earlier meal.</small>
       </label>
-      <div className="template-tabs">
+      {!initialKind&&<div className="template-tabs">
         <button type="button" className={kind==='meal'?'selected':''} onClick={()=>{setKind('meal');reset()}}>Saved Meals ({meals.length})</button>
         <button type="button" className={kind==='recipe'?'selected':''} onClick={()=>{setKind('recipe');reset()}}>Recipes ({recipes.length})</button>
-      </div>
+      </div>}
       {!editingOpen&&<button className="add-button" type="button" onClick={()=>{reset();setEditingOpen(true)}}>+ Create {kind==='meal'?'meal':'recipe'}</button>}
       {editingOpen&&<div className="template-editor">
         <h3>{editing?'Edit':'Create'} {kind==='meal'?'meal':'recipe'}</h3>
