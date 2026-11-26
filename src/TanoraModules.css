@@ -1,0 +1,173 @@
+/* Tanora 2.1 unified visual language. Scope everything to Workouts / Overview.
+   NutritionRedesign.css remains the source for the Nutrition layout. */
+.tanora-workout-theme,.tanora-overview-theme{
+  --tm-bg:#07191a;--tm-panel:#102c2e;--tm-raised:#153739;
+  --tm-border:#305454;--tm-muted:#a5c0ba;--tm-white:#effbf6;
+  --tm-accent:#19dcaf;
+  color:var(--tm-white);background:radial-gradient(ellipse at 76% 1%,#123a39 0%,transparent 38%),var(--tm-bg);
+  display:grid;grid-template-columns:235px minmax(0,1fr);width:100%;
+  min-height:calc(100vh - 73px);margin:0;padding:0;align-items:stretch;
+}
+.tanora-workout-theme *,.tanora-overview-theme *{box-sizing:border-box}
+.tanora-workout-theme h1,.tanora-workout-theme h2,.tanora-workout-theme h3,.tanora-workout-theme strong,
+.tanora-overview-theme h1,.tanora-overview-theme h2,.tanora-overview-theme h3,.tanora-overview-theme strong{color:var(--tm-white)}
+.tanora-workout-theme .subtitle,.tanora-overview-theme .subtitle{color:var(--tm-muted)}
+.tanora-workout-theme .eyebrow,.tanora-overview-theme .eyebrow{color:var(--tm-accent)}
+.tanora-workout-theme .footer-note,.tanora-overview-theme .footer-note{color:#90aea6}
+.tanora-workout-theme .tanora-module-sidebar,.tanora-overview-theme .tanora-module-sidebar{
+  position:sticky;top:65px;align-self:start;height:calc(100vh - 65px);
+  border-right:1px solid #214143;background:#091d1e;padding:26px 13px;overflow-y:auto;
+}
+.tanora-module-brand{display:flex;align-items:center;gap:12px;font-size:21px;font-weight:750;letter-spacing:-.3px;padding:0 12px 22px}
+.tanora-module-brand img{width:39px;height:39px;border-radius:12px}
+.tanora-module-sidebar-label{font-size:10px;letter-spacing:2px;color:#6f9e97;font-weight:750;margin:17px 12px 12px}
+.tanora-workout-theme .tanora-module-main,.tanora-overview-theme .tanora-module-main{
+  min-width:0;width:min(100%,1160px);margin:0 auto;padding:25px clamp(20px,4vw,56px) 80px;
+}
+.tanora-workout-theme .workout-heading,.tanora-overview-theme .weekly-overview-heading{margin-bottom:24px;gap:14px}
+.tanora-workout-theme .workout-heading h1,.tanora-overview-theme .weekly-overview-heading h1{
+  font-size:clamp(29px,3.2vw,37px);letter-spacing:-.6px;margin:7px 0;
+}
+.tanora-workout-theme .workout-nav{display:flex;flex-direction:column;gap:4px;margin:0}
+.tanora-workout-theme .workout-nav button,.tanora-overview-links a{
+  display:flex;align-items:center;gap:12px;text-align:left;padding:12px 13px;
+  min-height:43px;width:100%;background:transparent;border:1px solid transparent;border-radius:12px;
+  color:#d6e8e6;text-decoration:none;font-size:13px;font-weight:600;
+}
+.tanora-workout-theme .workout-nav button.active,.tanora-workout-theme .workout-nav button:hover,
+.tanora-overview-links a:hover,.tanora-overview-links a:focus-visible{background:#174c42;color:#b4ffee;border-color:#286656}
+.tanora-tab-icon{min-width:23px;font-size:19px;line-height:1}
+.tanora-overview-links{display:grid;gap:5px}
+.tanora-overview-links a{font-size:18px}
+.tanora-overview-links a span{font-size:13px}
+.tanora-module-mobile-nav{display:none}
+.tanora-workout-theme .card,.tanora-overview-theme .card{
+  background:linear-gradient(125deg,#123335,#102b2e);color:var(--tm-white);
+  border:1px solid var(--tm-border);box-shadow:none;border-radius:20px;
+}
+.tanora-workout-theme .workout-panel{margin-top:13px}
+.tanora-workout-theme .workout-panel h2,.tanora-overview-theme .weekly-section h2{font-size:21px;letter-spacing:-.4px}
+.tanora-workout-theme .workout-panel p:not(.workout-success):not(.workout-error):not(.subtitle),.tanora-overview-theme .weekly-footnote{color:var(--tm-muted)}
+.tanora-workout-theme .workout-primary,.tanora-overview-theme .workout-primary{
+  background:linear-gradient(110deg,#09ab91,#078d78);color:#fff;border:1px solid #14c49e;
+  border-radius:12px;padding:13px 17px;
+}
+.tanora-workout-theme .workout-primary:hover{background:#08b79a}
+.tanora-workout-theme .workout-secondary,.tanora-workout-theme .settings-button,
+.tanora-overview-theme .settings-button{
+  background:#1b4b47;color:#c7f9e9;border:1px solid #34645d;border-radius:11px;
+}
+.tanora-workout-theme button:focus-visible,.tanora-overview-theme button:focus-visible,
+.tanora-workout-theme a:focus-visible,.tanora-overview-theme a:focus-visible{
+  outline:2px solid var(--tm-accent);outline-offset:2px;
+}
+.tanora-workout-theme .workout-fields input,.tanora-workout-theme .workout-notes textarea,
+.tanora-workout-theme .workout-progress-picker select,.tanora-workout-theme .workout-filters input,
+.tanora-workout-theme .workout-filters select,.tanora-workout-theme .workout-set input[type=number],
+.tanora-workout-theme .workout-set-type select,.tanora-workout-theme .workout-unit-select select,
+.tanora-workout-theme .workout-routine-name input,.tanora-workout-theme .workout-timer-custom input,
+.tanora-workout-theme .workout-plate-inputs input,.tanora-workout-theme .workout-plate-list input{
+  background:#10292b;color:#f1faf6;border:1px solid #345a58;border-radius:10px;
+}
+.tanora-workout-theme .workout-unit-select{color:#a1c2b8}
+.tanora-workout-theme .workout-timer-clock{color:var(--tm-accent)}
+.tanora-workout-theme .workout-timer-presets button,.tanora-workout-theme .workout-plate-result{
+  background:#194742;color:#cdf9e9;border:1px solid #345f58;
+}
+.tanora-workout-theme .workout-timer-presets button:hover{background:#226155}
+.tanora-workout-theme .workout-utility,.tanora-workout-theme .workout-library,
+.tanora-workout-theme .workout-routine-builder{background:#102d2f;border:1px solid #335c59;border-radius:16px}
+.tanora-workout-theme .workout-item-button,.tanora-workout-theme .workout-library-items button{
+  background:#17393a;color:#edf9f4;border:1px solid #325552;border-radius:12px;
+}
+.tanora-workout-theme .workout-item-button:hover,.tanora-workout-theme .workout-library-items button:hover{background:#205149}
+.tanora-workout-theme .workout-exercise,.tanora-workout-theme .workout-history-row,
+.tanora-workout-theme .workout-routine-exercise,.tanora-workout-theme .workout-nutrition-link{border-color:#335450}
+.tanora-workout-theme .workout-history-row small,.tanora-workout-theme .workout-history-row p,
+.tanora-workout-theme .workout-exercise small,.tanora-workout-theme .workout-prefill-note,
+.tanora-workout-theme .workout-utility-hint,.tanora-workout-theme .workout-item-button small{color:#a5c2b9}
+.tanora-workout-theme .workout-prefill-note button{color:#68e6c4}
+.tanora-workout-theme .workout-set-header{color:#a0bcb6}
+.tanora-workout-theme .workout-set-type{color:#a3c1ba}
+.tanora-workout-theme .workout-set>button,.tanora-workout-theme .workout-danger-text{color:#f3a29b}
+.tanora-workout-theme .workout-metrics>div,.tanora-overview-theme .weekly-metrics>div{
+  background:#17403d;border:1px solid #305b55;color:var(--tm-white);border-radius:13px;padding:16px;
+}
+.tanora-workout-theme .workout-metrics small,.tanora-overview-theme .weekly-metrics small,
+.tanora-overview-theme .weekly-metrics span{color:#a8d0c4}
+.tanora-workout-theme .workout-chart-column>div,.tanora-overview-theme .weekly-bar-fill{background:#13d6aa}
+.tanora-workout-theme .workout-chart-column span,.tanora-workout-theme .workout-chart-column small,
+.tanora-overview-theme .weekly-bar-value{color:#b5dacf}
+.tanora-workout-theme .workout-error,.tanora-overview-theme .weekly-error{background:#4b2529;color:#ffc4c0;border-color:#864a4b}
+.tanora-workout-theme .workout-success{background:#17483e;color:#8bffd5}
+.tanora-workout-theme .workout-draft-recovery{border-color:#22cba7}
+.tanora-overview-theme .weekly-overview{width:min(100%,1160px)}
+.tanora-overview-theme .weekly-section{margin:16px 0;padding:25px}
+.tanora-overview-theme .weekly-section-title span{color:#a9c9be}
+.tanora-overview-theme .weekly-bar-track{background:#1f4443}
+.tanora-overview-theme .weekly-activity-day{background:#193b3c;border:1px solid #315756;color:#edf9f4}
+.tanora-overview-theme .weekly-activity-day span{color:#5be2bd}
+.tanora-overview-theme .weekly-activity-day strong{color:#e1f4ec}
+.tanora-overview-theme .weekly-activity-day small,.tanora-overview-theme .weekly-bar-day small{color:#a9c5bb}
+.tanora-overview-theme .weekly-bars{margin-top:26px}
+.tanora-overview-theme .weekly-error{padding:18px}
+@media(max-width:1000px){
+  .tanora-workout-theme,.tanora-overview-theme{grid-template-columns:195px minmax(0,1fr)}
+  .tanora-workout-theme .tanora-module-sidebar,.tanora-overview-theme .tanora-module-sidebar{padding-inline:10px}
+}
+@media(max-width:720px){
+  .tanora-workout-theme,.tanora-overview-theme{display:block;min-height:calc(100vh - 60px)}
+  .tanora-workout-theme .tanora-module-sidebar,.tanora-overview-theme .tanora-module-sidebar{display:none}
+  .tanora-workout-theme .tanora-module-main,.tanora-overview-theme .tanora-module-main{
+    padding:20px 16px calc(117px + env(safe-area-inset-bottom));width:100%;
+  }
+  .tanora-workout-theme .workout-heading{align-items:flex-start;flex-wrap:wrap}
+  .tanora-workout-theme .workout-heading h1,.tanora-overview-theme .weekly-overview-heading h1{font-size:29px}
+  .tanora-workout-theme .workout-heading .subtitle{font-size:13px}
+  .tanora-workout-theme .workout-header-actions{justify-content:flex-start}
+  .tanora-workout-theme .workout-panel,.tanora-overview-theme .weekly-section{padding:17px}
+  .tanora-workout-theme .workout-fields{grid-template-columns:minmax(0,1fr) 120px}
+  .tanora-workout-theme .workout-utility{padding:12px}
+  .tanora-workout-theme .workout-set,.tanora-workout-theme .workout-set-header{grid-template-columns:23px minmax(0,1fr) minmax(0,1fr) 35px 22px}
+  .tanora-module-mobile-nav{
+    position:fixed;bottom:0;left:0;right:0;z-index:500;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:3px;padding:9px 7px calc(12px + env(safe-area-inset-bottom));
+    background:#092224;border-top:1px solid #315b56;box-shadow:0 -12px 26px #0005;
+  }
+  .tanora-module-mobile-nav button,.tanora-module-mobile-nav a{
+    text-align:center;border:0;border-radius:13px;color:#c4dad4;text-decoration:none;background:transparent;
+    display:grid;place-items:center;gap:4px;padding:7px 2px;font-size:10px;font-weight:650;min-height:54px;
+  }
+  .tanora-module-mobile-nav button span,.tanora-module-mobile-nav a span{font-size:23px;line-height:1}
+  .tanora-module-mobile-nav button.active,.tanora-module-mobile-nav a:focus-visible{background:#0e5248;color:#53eac5}
+  .tanora-overview-mobile-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .tanora-overview-mobile-nav a{color:#65e4bd}
+  .tanora-overview-theme .weekly-activity{grid-template-columns:1fr}
+  .tanora-overview-theme .weekly-activity-day{display:grid;grid-template-columns:48px 1fr}
+  .tanora-overview-theme .weekly-activity-day small{grid-column:2}
+}
+@media(max-width:380px){
+  .tanora-workout-theme .workout-fields{grid-template-columns:1fr}
+  .tanora-workout-theme .workout-set{gap:4px}
+  .tanora-workout-theme .workout-set input[type=number]{padding:8px 3px}
+}
+
+/* Unify the top-level section switcher across the redesigned modules. */
+body:has(.tanora-workout-theme) .tanora-main-nav,
+body:has(.tanora-overview-theme) .tanora-main-nav{
+  background:#071a1b;border-color:#264948;gap:9px;
+}
+body:has(.tanora-workout-theme) .tanora-main-nav button,
+body:has(.tanora-overview-theme) .tanora-main-nav button{
+  background:#153335;color:#d6eae5;border:1px solid #2b5551;border-radius:12px;
+}
+body:has(.tanora-workout-theme) .tanora-main-nav button.selected,
+body:has(.tanora-overview-theme) .tanora-main-nav button.selected{
+  background:linear-gradient(110deg,#0aaf97,#078c77);color:#fff;border-color:#12be9f;
+}
+@media(max-width:720px){
+  body:has(.tanora-workout-theme) .tanora-main-nav,
+  body:has(.tanora-overview-theme) .tanora-main-nav{gap:5px;padding:9px 10px}
+  body:has(.tanora-workout-theme) .tanora-main-nav button,
+  body:has(.tanora-overview-theme) .tanora-main-nav button{font-size:12px;padding:11px 4px}
+}

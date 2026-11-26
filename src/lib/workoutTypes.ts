@@ -10,6 +10,8 @@ export type WorkoutSet = {
   reps: number
   weight: number
   completed: boolean
+  /** Old workout records without kind are treated as working sets. */
+  kind?: 'working' | 'warmup'
 }
 
 export type WorkoutExercise = {
@@ -37,6 +39,23 @@ export type WorkoutData = {
 }
 
 export const emptyWorkoutData: WorkoutData = { history: [], routines: [] }
+
+export function isWorkingSet(set: WorkoutSet): boolean {
+  return set.kind !== 'warmup'
+}
+
+export function lastWorkingSets(sessions: WorkoutSession[], exerciseId: string): WorkoutSet[] {
+  const previous = sessions
+    .filter(session => session.exercises.some(item => item.exercise.id === exerciseId))
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .find(session => session.exercises.some(item =>
+      item.exercise.id === exerciseId && item.sets.some(set => set.completed && isWorkingSet(set))))
+  if (!previous) return []
+  return previous.exercises
+    .filter(item => item.exercise.id === exerciseId)
+    .flatMap(item => item.sets)
+    .filter(set => set.completed && isWorkingSet(set))
+}
 
 export const exerciseLibrary: Exercise[] = [
   ["Barbell Bench Press","Chest","Barbell"],
@@ -223,20 +242,20 @@ export const exerciseLibrary: Exercise[] = [
 
 export function totalVolume(session: WorkoutSession): number {
   return session.exercises.reduce((volume, item) =>
-    volume + item.sets.filter(set => set.completed).reduce(
+    volume + item.sets.filter(set => set.completed && isWorkingSet(set)).reduce(
       (value, set) => value + set.weight * set.reps, 0
     ), 0)
 }
 
 export function completedSets(session: WorkoutSession): number {
   return session.exercises.reduce((count, item) =>
-    count + item.sets.filter(set => set.completed).length, 0)
+    count + item.sets.filter(set => set.completed && isWorkingSet(set)).length, 0)
 }
 
 export function bestWeight(sessions: WorkoutSession[], exerciseId: string): number {
   return Math.max(0, ...sessions.flatMap(session => session.exercises
     .filter(item => item.exercise.id === exerciseId)
-    .flatMap(item => item.sets.filter(set => set.completed).map(set => set.weight))))
+    .flatMap(item => item.sets.filter(set => set.completed && isWorkingSet(set)).map(set => set.weight))))
 }
 
 export function validWorkoutData(value: unknown): value is WorkoutData {
@@ -248,7 +267,8 @@ export function validWorkoutData(value: unknown): value is WorkoutData {
     s.exercises.every(e => e && e.exercise && typeof e.exercise.id === 'string' &&
       typeof e.exercise.name === 'string' && Array.isArray(e.sets) &&
       e.sets.every(t => t && typeof t.id === 'string' && Number.isFinite(t.reps) &&
-        t.reps >= 0 && Number.isFinite(t.weight) && t.weight >= 0 && typeof t.completed === 'boolean'))) &&
+        t.reps >= 0 && Number.isFinite(t.weight) && t.weight >= 0 && typeof t.completed === 'boolean' &&
+        (t.kind === undefined || t.kind === 'warmup' || t.kind === 'working')))) &&
     data.routines.every(r => r && typeof r.id === 'string' && typeof r.name === 'string' &&
       Array.isArray(r.exercises) && r.exercises.every(e => e && typeof e.id === 'string' &&
         typeof e.name === 'string'))

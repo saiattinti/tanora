@@ -1,11 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
-import { bestWeight, completedSets, exerciseLibrary, totalVolume } from './lib/workoutTypes'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { bestWeight, completedSets, exerciseLibrary, totalVolume, isWorkingSet, lastWorkingSets } from './lib/workoutTypes'
 import type { Exercise, WorkoutData, WorkoutExercise, WorkoutSession } from './lib/workoutTypes'
 import { loadWorkoutData, saveWorkoutData } from './lib/workoutStorage'
 import { repdbImage } from './lib/repdbImages'
+import { readWorkoutDraft, removeWorkoutDraft, storeWorkoutDraft } from './lib/workoutDraft'
+import { readWeightUnit, saveWeightUnit, poundsToDisplay, displayToPounds, formatWeight } from './lib/workoutUnits'
+import type { WeightUnit } from './lib/workoutUnits'
+import { RestTimerPanel, PlateCalculator } from './WorkoutUtilities'
+import { useRestTimer } from './lib/useRestTimer'
 import './WorkoutTracker.css'
+import './TanoraModules.css'
 
-type View = 'log' | 'routines' | 'history' | 'progress'
+type View = 'log' | 'routines' | 'history' | 'progress' | 'tools'
 const dateToday = () => {
   const d = new Date()
   return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
@@ -47,8 +53,16 @@ function SetNumberInput({ value, label, step, onValueChange }: {
   />
 }
 
-const newSet = () => ({ id: crypto.randomUUID(), reps: 8, weight: 0, completed: false })
-const makeExercise = (exercise: Exercise): WorkoutExercise => ({ exercise, sets: [newSet(), newSet(), newSet()] })
+const newSet = () => ({ id: crypto.randomUUID(), reps: 8, weight: 0, completed: false, kind: 'working' as const })
+const newExercise = (exercise: Exercise, history: WorkoutSession[]): WorkoutExercise => {
+  const previous = lastWorkingSets(history, exercise.id)
+  return {
+    exercise,
+    sets: previous.length
+      ? previous.map(set => ({ ...newSet(), reps: set.reps, weight: set.weight }))
+      : [newSet(), newSet(), newSet()],
+  }
+}
 const newSession = (): WorkoutSession => ({
   id: crypto.randomUUID(), name: 'Workout', date: dateToday(), exercises: [], notes: '',
 })
@@ -57,6 +71,11 @@ const number = (value: number) => Number.isFinite(value) ? value.toLocaleString(
 export default function WorkoutTracker({ userId, onNutrition }: { userId: string | null, onNutrition: () => void }) {
   const [data, setData] = useState<WorkoutData>({ history: [], routines: [] })
   const [active, setActive] = useState<WorkoutSession | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [recoverable, setRecoverable] = useState(() => readWorkoutDraft(userId))
+  const ownDraftWrite = useRef(0)
+  const draftConflictWarned = useRef(false)
+  const [draftError, setDraftError] = useState('')
   const [view, setView] = useState<View>('log')
   const [ready, setReady] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -68,6 +87,76 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
   const [showLibrary, setShowLibrary] = useState(false)
   const [routineDraft, setRoutineDraft] = useState<{ name: string, exercises: Exercise[] } | null>(null)
   const [selectedProgressId, setSelectedProgressId] = useState('')
+  const [unit, setUnit] = useState<WeightUnit>(readWeightUnit)
+  const restTimer = useRestTimer(userId)
+
+  function changeUnit(next: WeightUnit) {
+    saveWeightUnit(next)
+    setUnit(next)
+  }
+
+  // Keep unsaved edits locally. Drafts are never uploaded or counted as completed workouts.
+  useEffect(() => {
+    if (!active) return
+    try {
+      const existing = readWorkoutDraft(userId)
+      if (existing && existing.savedAt > ownDraftWrite.current && ownDraftWrite.current !== 0) {
+        if (!draftConflictWarned.current) {
+          draftConflictWarned.current = true
+          window.alert('This workout draft was changed in another tab. This tab will not overwrite it. Copy your unsaved changes and reload to recover the newer version.')
+        }
+        return
+      }
+      const savedAt = Date.now()
+      storeWorkoutDraft(userId, { version: 1, session: active, editingId, savedAt })
+      ownDraftWrite.current = savedAt
+    } catch {
+      console.warn('Tanora: workout draft could not be stored locally.')
+    }
+  }, [active, editingId, userId])
+
+  function beginWorkout(session: WorkoutSession, originalId: string | null = null) {
+    const existingDraft = readWorkoutDraft(userId)
+    if (recoverable || existingDraft) {
+      if (existingDraft) setRecoverable(existingDraft)
+      setError('Resume or discard the recovered draft before starting another workout.')
+      return
+    }
+    setError('')
+    setMessage('')
+    setEditingId(originalId)
+    setActive(session)
+    setView('log')
+  }
+
+  function discardCurrent() {
+    if (!window.confirm('Discard this unsaved workout?')) return
+    removeWorkoutDraft(userId)
+    ownDraftWrite.current = 0
+    draftConflictWarned.current = false
+    setRecoverable(null)
+    setEditingId(null)
+    setActive(null)
+    setDraftError('')
+  }
+
+  function resumeDraft() {
+    if (!recoverable) return
+    setEditingId(recoverable.editingId)
+    setActive(recoverable.session)
+    ownDraftWrite.current = recoverable.savedAt
+    setRecoverable(null)
+    setDraftError('')
+    setView('log')
+  }
+
+  function discardRecoveredDraft() {
+    if (!window.confirm('Discard the recovered workout draft?')) return
+    removeWorkoutDraft(userId)
+    setRecoverable(null)
+    ownDraftWrite.current = 0
+    setDraftError('')
+  }
 
   useEffect(() => {
     let current = true
@@ -101,7 +190,7 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
     .map(s => ({
       date: s.date,
       weight: Math.max(0, ...s.exercises.filter(e => e.exercise.id === selectedProgress)
-        .flatMap(e => e.sets.filter(t => t.completed).map(t => t.weight))),
+        .flatMap(e => e.sets.filter(t => t.completed && isWorkingSet(t)).map(t => t.weight))),
     })), [data.history, selectedProgress])
 
   async function persist(next: WorkoutData, success: string) {
@@ -129,7 +218,10 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
     }))
   }
 
-  function updateSet(exerciseIndex: number, setId: string, key: 'weight' | 'reps' | 'completed', value: number | boolean) {
+  function updateSet(exerciseIndex: number, setId: string, key: 'weight' | 'reps' | 'completed' | 'kind', value: number | boolean | 'warmup' | 'working') {
+    if (key === 'completed' && value === true && active?.exercises[exerciseIndex]?.sets.find(set => set.id === setId)?.kind !== 'warmup' && restTimer.autoStart) {
+      restTimer.start()
+    }
     updateExercise(exerciseIndex, e => ({
       ...e, sets: e.sets.map(set => set.id === setId ? { ...set, [key]: value } : set),
     }))
@@ -138,14 +230,30 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
   function startFromRoutine(id: string) {
     const routine = data.routines.find(r => r.id === id)
     if (!routine) return
-    setActive({ ...newSession(), name: routine.name, exercises: routine.exercises.map(makeExercise) })
-    setView('log')
+    beginWorkout({ ...newSession(), name: routine.name, exercises: routine.exercises.map(exercise => newExercise(exercise, data.history)) })
+  }
+
+  function startEditingWorkout(session: WorkoutSession) {
+    beginWorkout({
+      ...session,
+      exercises: session.exercises.map(item => ({
+        exercise: item.exercise,
+        sets: item.sets.map(set => ({ ...set })),
+      })),
+    }, session.id)
+  }
+
+  function resetSuggestedSets(exerciseIndex: number) {
+    updateExercise(exerciseIndex, item => ({
+      ...item,
+      sets: [newSet(), newSet(), newSet()],
+    }))
   }
 
   async function finishWorkout() {
     if (!active || active.exercises.length === 0) return
-    if (!active.exercises.some(e => e.sets.some(s => s.completed))) {
-      setError('Complete at least one set before saving.')
+    if (!active.exercises.some(e => e.sets.some(s => s.completed && isWorkingSet(s)))) {
+      setError('Complete at least one working set before saving.')
       return
     }
     if (!active.name.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(active.date)) {
@@ -156,8 +264,23 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
       !Number.isFinite(s.weight) || !Number.isFinite(s.reps) ||
       s.weight < 0 || s.reps < 0 || !Number.isInteger(s.reps)))
     if (hasInvalid) { setError('Weights must be nonnegative and repetitions must be whole numbers.'); return }
-    const saved = await persist({ ...data, history: [active, ...data.history] }, 'Workout saved to your history.')
-    if (saved) setActive(null)
+    const nextHistory = editingId
+      ? data.history.map(session => session.id === editingId ? { ...active, id: editingId } : session)
+      : [active, ...data.history]
+    if (editingId && !data.history.some(session => session.id === editingId)) {
+      setError('The original workout could not be found. No changes were saved.')
+      return
+    }
+    const saved = await persist({ ...data, history: nextHistory },
+      editingId ? 'Workout changes saved.' : 'Workout saved to your history.')
+    if (saved) {
+      removeWorkoutDraft(userId)
+      ownDraftWrite.current = 0
+      draftConflictWarned.current = false
+      setEditingId(null)
+      setActive(null)
+      setRecoverable(null)
+    }
   }
 
   async function saveRoutine() {
@@ -207,38 +330,63 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
   if (!ready) return <section className="workout-panel card"><h2>Workout tracker</h2><p>{error || 'Loading your workouts...'}</p></section>
 
   return (
-    <div className="workout-app">
-      <header className="workout-heading">
-        <div><p className="eyebrow">TANORA 2.0</p><h1>Workout Tracker</h1><p className="subtitle">Train, log, and grow stronger.</p></div>
-        <button className="settings-button" type="button" onClick={onNutrition}>Nutrition ↗</button>
-      </header>
+    <div className="workout-app tanora-workout-theme">
+      <aside className="tanora-module-sidebar">
+        <div className="tanora-module-brand"><img src="/tanora-icon.svg" alt="" /><strong>Tanora</strong></div>
+        <p className="tanora-module-sidebar-label">WORKOUTS</p>
       <nav className="workout-nav" aria-label="Workout sections">
-        {(['log', 'routines', 'history', 'progress'] as View[]).map(tab =>
-          <button key={tab} className={view === tab ? 'active' : ''} type="button" onClick={() => setView(tab)}>{tab === 'log' ? 'Log' : tab === 'routines' ? 'Routines' : tab === 'history' ? 'History' : 'Progress'}</button>)}
+        {(['log', 'routines', 'history', 'progress', 'tools'] as View[]).map(tab =>
+          <button key={tab} className={view === tab ? 'active' : ''} type="button" onClick={() => setView(tab)}>
+            <span className="tanora-tab-icon" aria-hidden="true">{tab === 'log' ? '▤' : tab === 'routines' ? '▱' : tab === 'history' ? '◷' : tab === 'progress' ? '↗' : '⚙'}</span>
+            <span>{tab === 'log' ? 'Log' : tab === 'routines' ? 'Routines' : tab === 'history' ? 'History' : tab === 'progress' ? 'Progress' : 'Tools'}</span>
+          </button>)}
       </nav>
+
+      </aside>
+      <div className="tanora-module-main">
+      <header className="workout-heading">
+        <div><p className="eyebrow">TANORA 2.1 DEVELOPMENT</p><h1>Workout Tracker</h1><p className="subtitle">Train, log, and grow stronger.</p></div>
+        <div className="workout-header-actions"><label className="workout-unit-select">Weight unit <select aria-label="Workout weight unit" value={unit} onChange={e => changeUnit(e.target.value as WeightUnit)}><option value="lb">lb</option><option value="kg">kg</option></select></label><button className="settings-button" type="button" onClick={onNutrition}>Nutrition ↗</button></div>
+      </header>
       {error && <p className="workout-error" role="alert">{error} <button type="button" onClick={() => setError('')}>Dismiss</button></p>}
       {message && <p className="workout-success" role="status">{message}</p>}
+      {draftError && <p className="workout-error" role="alert">{draftError}</p>}
+      {recoverable && <section className="card workout-panel workout-draft-recovery">
+        <h2>Unfinished workout found</h2>
+        <p>Resume <strong>{recoverable.session.name}</strong>, or discard this browser's saved draft. Your finished workouts are untouched.</p>
+        <div className="workout-actions">
+          <button className="workout-primary" type="button" onClick={resumeDraft}>Resume draft</button>
+          <button className="workout-secondary" type="button" onClick={discardRecoveredDraft}>Discard draft</button>
+        </div>
+      </section>}
       {view === 'log' && <section className="card workout-panel">
+        <RestTimerPanel timer={restTimer}/>
         {!active ? <>
           <h2>Start a workout</h2><p className="subtitle">Log your sets and see how they compare with previous sessions.</p>
-          <button className="workout-primary" type="button" onClick={() => setActive(newSession())}>+ Start empty workout</button>
+          <button className="workout-primary" type="button" onClick={() => beginWorkout(newSession())}>+ Start empty workout</button>
           {data.routines.length > 0 && <div className="workout-list"><h3>Start from a routine</h3>{data.routines.map(r =>
             <button className="workout-item-button" key={r.id} type="button" onClick={() => startFromRoutine(r.id)}>{r.name} <small>{r.exercises.length} exercises</small></button>)}</div>}
         </> : <>
           <div className="workout-fields">
-            <label>Workout name<input value={active.name} maxLength={80} onChange={e => setActive({ ...active, name: e.target.value })}/></label>
+            <label>{editingId ? 'Edit workout name' : 'Workout name'}<input value={active.name} maxLength={80} onChange={e => setActive({ ...active, name: e.target.value })}/></label>
             <label>Date<input type="date" value={active.date} onChange={e => setActive({ ...active, date: e.target.value })}/></label>
           </div>
           {active.exercises.map((item, i) => <article className="workout-exercise" key={item.exercise.id + i}>
-            <div className="workout-exercise-top"><div><h3>{item.exercise.name}</h3><small>{item.exercise.muscle} · {item.exercise.equipment} · Previous best: {number(bestWeight(history, item.exercise.id))} lb</small></div>
+            <div className="workout-exercise-top"><div><h3>{item.exercise.name}</h3><small>{item.exercise.muscle} · {item.exercise.equipment} · Previous working-set best: {formatWeight(bestWeight(history.filter(s => s.id !== editingId), item.exercise.id), unit)}</small>
+              <div className="workout-prefill-note">New exercises use last completed working sets when available. <button type="button" onClick={() => resetSuggestedSets(i)}>Reset sets</button></div></div>
               <button type="button" className="workout-danger-text" onClick={() => setActive({ ...active, exercises: active.exercises.filter((_, index) => index !== i) })}>Remove</button></div>
-            <div className="workout-set-header"><span>Set</span><span>lb</span><span>Reps</span><span>Done</span><span></span></div>
+            <div className="workout-set-header"><span>Set</span><span>{unit}</span><span>Reps</span><span>Done</span><span></span></div>
             {item.sets.map((set, j) => <div className="workout-set" key={set.id}>
               <span>{j + 1}</span>
-              <SetNumberInput label={item.exercise.name + ' weight set ' + (j + 1)} value={set.weight} step="0.5" onValueChange={value => updateSet(i, set.id, 'weight', value)}/>
+              <SetNumberInput key={set.id + unit} label={item.exercise.name + ' weight set ' + (j + 1) + ' in ' + unit} value={poundsToDisplay(set.weight, unit)} step={unit === 'lb' ? '0.5' : '0.01'} onValueChange={value => updateSet(i, set.id, 'weight', displayToPounds(value, unit))}/>
               <SetNumberInput label={item.exercise.name + ' reps set ' + (j + 1)} value={set.reps} step="1" onValueChange={value => updateSet(i, set.id, 'reps', value)}/>
               <input aria-label={item.exercise.name + ' completed set ' + (j + 1)} type="checkbox" checked={set.completed} onChange={e => updateSet(i, set.id, 'completed', e.target.checked)}/>
               <button aria-label={'Remove set ' + (j + 1)} type="button" onClick={() => updateExercise(i, exercise => ({ ...exercise, sets: exercise.sets.filter(s => s.id !== set.id) }))}>×</button>
+              <label className="workout-set-type">Set type
+                <select aria-label={item.exercise.name + ' type set ' + (j + 1)} value={set.kind ?? 'working'} onChange={e => updateSet(i, set.id, 'kind', e.target.value as 'warmup' | 'working')}>
+                  <option value="working">Working set</option><option value="warmup">Warm-up</option>
+                </select>
+              </label>
             </div>)}
             <button className="workout-secondary" type="button" onClick={() => updateExercise(i, e => ({ ...e, sets: [...e.sets, newSet()] }))}>+ Add set</button>
           </article>)}
@@ -249,7 +397,7 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
               <select aria-label="Equipment" value={equipment} onChange={e => setEquipment(e.target.value)}>{['All', 'Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight'].map(v => <option key={v}>{v}</option>)}</select></div>
             <p className="workout-library-count">{catalog.length} exercises found · {exerciseLibrary.length} total</p>
             <div className="workout-library-items">{catalog.map(e => <button type="button" key={e.id} onClick={() => {
-              setActive(previous => previous && ({ ...previous, exercises: [...previous.exercises, makeExercise(e)] }))
+              setActive(previous => previous && ({ ...previous, exercises: [...previous.exercises, newExercise(e, history)] }))
               setShowLibrary(false)
             }}><span className="workout-exercise-thumb">
                 {repdbImage(e.id) ? <img src={repdbImage(e.id)!} alt={e.name + ' starting position, illustration by RepDB'} loading="lazy" onError={event => { event.currentTarget.style.display = 'none' }} /> : <span aria-hidden="true" className="workout-no-art">EX</span>}
@@ -257,9 +405,9 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
             <a className="repdb-credit" href="https://repdb.co" target="_blank" rel="noopener noreferrer">Exercise data by RepDB (repdb.co)</a>
           </div>}
           <label className="workout-notes">Notes<textarea maxLength={1000} rows={2} value={active.notes} onChange={e => setActive({ ...active, notes: e.target.value })} placeholder="How did it feel?"/></label>
-          <div className="workout-actions"><button className="workout-primary" disabled={busy || active.exercises.length === 0} type="button" onClick={() => void finishWorkout()}>Finish & save workout</button>
+          <div className="workout-actions"><button className="workout-primary" disabled={busy || active.exercises.length === 0} type="button" onClick={() => void finishWorkout()}>{editingId ? 'Save workout changes' : 'Finish & save workout'}</button>
             <button className="workout-secondary" disabled={busy || active.exercises.length === 0} type="button" onClick={() => void saveRoutine()}>Save as routine</button>
-            <button className="workout-danger-text" type="button" onClick={() => { if (window.confirm('Discard this unsaved workout?')) setActive(null) }}>Discard</button></div>
+            <button className="workout-danger-text" type="button" onClick={discardCurrent}>{editingId ? 'Cancel editing' : 'Discard'}</button></div>
         </>}
       </section>}
       {view === 'routines' && <section className="card workout-panel"><h2>Your routines</h2><p className="subtitle">Build a routine here, save one during a workout, or convert an earlier workout from History.</p>
@@ -283,23 +431,33 @@ export default function WorkoutTracker({ userId, onNutrition }: { userId: string
           <button className="workout-danger-text" disabled={busy} type="button" onClick={() => { if (window.confirm('Delete this routine?')) void persist({ ...data, routines: data.routines.filter(x => x.id !== r.id) }, 'Routine deleted.') }}>Delete</button></div></div>)}
       </section>}
       {view === 'history' && <section className="card workout-panel"><h2>Workout history</h2>
-        {history.length === 0 ? <p>No completed workouts yet.</p> : history.map(s => <details className="workout-history-row" key={s.id}><summary><strong>{s.name}</strong> <small>{s.date} · {completedSets(s)} sets · {number(totalVolume(s))} lb volume</small></summary>
-          {s.exercises.map((e, i) => <p key={i}><strong>{e.exercise.name}:</strong> {e.sets.filter(t => t.completed).map(t => t.weight + ' lb × ' + t.reps).join(', ') || 'No completed sets'}</p>)}
+        {history.length === 0 ? <p>No completed workouts yet.</p> : history.map(s => <details className="workout-history-row" key={s.id}><summary><strong>{s.name}</strong> <small>{s.date} · {completedSets(s)} sets · {formatWeight(totalVolume(s), unit)} volume</small></summary>
+          {s.exercises.map((e, i) => <p key={i}><strong>{e.exercise.name}:</strong> {e.sets.filter(t => t.completed).map(t => formatWeight(t.weight, unit) + ' × ' + t.reps + (t.kind === 'warmup' ? ' (warm-up)' : '')).join(', ') || 'No completed sets'}</p>)}
           {s.notes && <p><em>{s.notes}</em></p>}
+          <button className="workout-secondary" disabled={busy || !!active || !!recoverable} type="button" onClick={() => startEditingWorkout(s)}>Edit workout</button>
           <button className="workout-secondary" disabled={busy} type="button" onClick={() => void saveHistoryAsRoutine(s)}>Save as routine</button>
           <button className="workout-danger-text" disabled={busy} type="button" onClick={() => { if (window.confirm('Delete this saved workout?')) void persist({ ...data, history: data.history.filter(x => x.id !== s.id) }, 'Workout deleted.') }}>Delete workout</button>
         </details>)}
       </section>}
       {view === 'progress' && <section className="card workout-panel"><h2>Strength & training insights</h2>
-        <div className="workout-metrics"><div><small>Workouts</small><strong>{history.length}</strong></div><div><small>Completed sets</small><strong>{number(totalSets)}</strong></div><div><small>Total volume (lb)</small><strong>{number(volume)}</strong></div></div>
+        <div className="workout-metrics"><div><small>Workouts</small><strong>{history.length}</strong></div><div><small>Completed sets</small><strong>{number(totalSets)}</strong></div><div><small>Total volume ({unit})</small><strong>{number(poundsToDisplay(volume,unit))}</strong></div></div>
         <label className="workout-progress-picker">Exercise<select value={selectedProgress} onChange={e => setSelectedProgressId(e.target.value)}>{allExercises.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select></label>
-        <p>Personal best: <strong>{number(bestWeight(history, selectedProgress))} lb</strong></p>
+        <p>Personal best: <strong>{formatWeight(bestWeight(history, selectedProgress), unit)}</strong></p>
         <div className="workout-chart" role="img" aria-label="Best completed set weight per workout, oldest to newest">
-          {progress.length ? progress.map((p, i) => <div className="workout-chart-column" key={p.date + i} title={p.date + ': ' + p.weight + ' lb'}><span>{number(p.weight)}</span><div style={{ height: Math.max(3, p.weight / chartMax * 130) + 'px' }}/><small>{p.date.slice(5)}</small></div>) : <p>Complete a workout with this exercise to see a strength chart.</p>}
+          {progress.length ? progress.map((p, i) => <div className="workout-chart-column" key={p.date + i} title={p.date + ': ' + formatWeight(p.weight, unit)}><span>{number(poundsToDisplay(p.weight, unit))}</span><div style={{ height: Math.max(3, p.weight / chartMax * 130) + 'px' }}/><small>{p.date.slice(5)}</small></div>) : <p>Complete a workout with this exercise to see a strength chart.</p>}
         </div><p className="subtitle">Chart shows the heaviest completed set for this exercise in each workout. Compare like-for-like reps for meaningful progress.</p>
         <div className="workout-nutrition-link"><strong>Nutrition + training</strong><p>Your nutrition diary and workout history live together in Tanora. Use your nutrition dashboard to review intake on training days.</p><button className="workout-secondary" type="button" onClick={onNutrition}>Open nutrition dashboard</button></div>
       </section>}
-      <p className="footer-note">{userId ? 'Workouts sync to your Tanora account.' : 'Guest workouts are saved only in this browser.'} Weights are recorded in pounds.</p>
+      {view === 'tools' && <section className="card workout-panel"><h2>Gym tools</h2><RestTimerPanel timer={restTimer}/><PlateCalculator key={unit} unit={unit}/></section>}
+      <p className="footer-note">{userId ? 'Workouts sync to your Tanora account.' : 'Guest workouts are saved only in this browser.'} Workout weights are stored internally in pounds, and displayed in {unit}.</p>
+      </div>
+      <nav className="tanora-module-mobile-nav" aria-label="Workout mobile sections">
+        {(['log','routines','history','progress','tools'] as View[]).map(tab=>
+          <button key={tab} type="button" className={view===tab?'active':''} onClick={()=>setView(tab)}>
+            <span aria-hidden="true">{tab==='log'?'▤':tab==='routines'?'▱':tab==='history'?'◷':tab==='progress'?'↗':'⚙'}</span>
+            {tab==='log'?'Log':tab==='routines'?'Routines':tab==='history'?'History':tab==='progress'?'Progress':'Tools'}
+          </button>)}
+      </nav>
     </div>
   )
 }

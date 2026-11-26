@@ -4,12 +4,13 @@ import { supabase } from './lib/supabase'
 import App from './App'
 import Auth from './Auth'
 import WorkoutTracker from './WorkoutTracker'
+import WeeklyOverview from './WeeklyOverview'
 
 export default function Root() {
   const [session, setSession] = useState<Session | null>(null)
   const [guestMode, setGuestMode] = useState(() => window.sessionStorage.getItem('nutrition-guest-session') === 'true')
   const [checking, setChecking] = useState(true)
-  const [section, setSection] = useState<'nutrition' | 'workouts'>('nutrition')
+  const [section, setSection] = useState<'nutrition' | 'workouts' | 'overview'>('nutrition')
 
   const accountPage =
     new URLSearchParams(window.location.search)
@@ -69,9 +70,12 @@ export default function Root() {
       <nav className="tanora-main-nav" aria-label="Tanora sections">
         <button className={section === 'nutrition' ? 'selected' : ''} type="button" onClick={() => setSection('nutrition')}>🥗 Nutrition</button>
         <button className={section === 'workouts' ? 'selected' : ''} type="button" onClick={() => setSection('workouts')}>🏋️ Workouts</button>
+        <button className={section === 'overview' ? 'selected' : ''} type="button" onClick={() => setSection('overview')}>📊 Overview</button>
       </nav>
-      {section === 'workouts' ? (
-        <WorkoutTracker userId={session?.user.id ?? null} onNutrition={() => setSection('nutrition')} />
+      {section === 'overview' ? (
+        <WeeklyOverview key={session?.user.id ?? 'guest'} userId={session?.user.id ?? null}/>
+      ) : section === 'workouts' ? (
+        <WorkoutTracker key={session?.user.id ?? 'guest'} userId={session?.user.id ?? null} onNutrition={() => setSection('nutrition')} />
       ) : <App
       key={session?.user.id ?? 'guest'}
       userId={session?.user.id ?? null}
