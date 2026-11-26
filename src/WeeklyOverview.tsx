@@ -7,6 +7,7 @@ import { completedSets, totalVolume } from './lib/workoutTypes'
 import type { WorkoutSession } from './lib/workoutTypes'
 import { formatWeight, readWeightUnit } from './lib/workoutUnits'
 import './WeeklyOverview.css'
+import './TanoraModules.css'
 
 type WeekDay = {
   date: string
@@ -106,7 +107,16 @@ export default function WeeklyOverview({userId}:{userId:string|null}) {
   const rangeLabel=new Date(first+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})+
     ' – '+new Date(last+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})
 
-  return <main className="weekly-overview">
+  return <div className="tanora-overview-theme">
+    <aside className="tanora-module-sidebar">
+      <div className="tanora-module-brand"><img src="/tanora-icon.svg" alt="" /><strong>Tanora</strong></div>
+      <p className="tanora-module-sidebar-label">OVERVIEW</p>
+      <nav className="tanora-overview-links" aria-label="Overview sections">
+        <a href="#weekly-nutrition">◈ <span>Nutrition Summary</span></a>
+        <a href="#weekly-training">↗ <span>Training Summary</span></a>
+      </nav>
+    </aside>
+    <main className="weekly-overview tanora-module-main">
     <header className="weekly-overview-heading">
       <div>
         <p className="eyebrow">TANORA · WEEKLY OVERVIEW</p>
@@ -118,7 +128,7 @@ export default function WeeklyOverview({userId}:{userId:string|null}) {
     {error&&<div className="card weekly-error" role="alert">Could not refresh your overview: {error}. {data?'Showing the last successfully loaded information.':'Try Refresh again.'}</div>}
     {loading&&!data&&<section className="card"><p>Loading your recent nutrition and workouts…</p></section>}
     {data&&<>
-      <section className="card weekly-section">
+      <section className="card weekly-section" id="weekly-nutrition">
         <div className="weekly-section-title"><h2>Nutrition</h2><span>{foodDays.length}/7 days with food entries</span></div>
         <div className="weekly-metrics">
           <div><small>Average logged-day calories</small><strong>{calorieAverage===null?'No logs':fmt(calorieAverage)}</strong><span>{calorieAverage===null?'':'kcal/day'}</span></div>
@@ -138,7 +148,7 @@ export default function WeeklyOverview({userId}:{userId:string|null}) {
         <p className="weekly-footnote">Averages include only days with food entries. Missing days are not counted as zero, and partially logged days may underestimate actual intake.</p>
       </section>
 
-      <section className="card weekly-section">
+      <section className="card weekly-section" id="weekly-training">
         <div className="weekly-section-title"><h2>Workouts</h2><span>Saved sessions within this date range</span></div>
         <div className="weekly-metrics">
           <div><small>Workouts completed</small><strong>{workouts}</strong><span>saved sessions</span></div>
@@ -156,5 +166,11 @@ export default function WeeklyOverview({userId}:{userId:string|null}) {
       </section>
       <p className="footer-note">{userId?'Private account records are read from Supabase.':'Guest records are read from this browser only.'} {lastUpdated?'Last refreshed '+lastUpdated+'.':''}</p>
     </>}
-  </main>
+    </main>
+    <nav className="tanora-module-mobile-nav tanora-overview-mobile-nav" aria-label="Weekly overview shortcuts">
+      <a href="#weekly-nutrition"><span aria-hidden="true">◈</span>Nutrition</a>
+      <a href="#weekly-training"><span aria-hidden="true">↗</span>Training</a>
+      <button type="button" disabled={loading} onClick={()=>void refresh()}><span aria-hidden="true">↻</span>Refresh</button>
+    </nav>
+  </div>
 }
