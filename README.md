@@ -2,7 +2,7 @@
 
 **[🌐 Open Tanora (Live App)](https://tanora-1qa.pages.dev/)**
 
-Tanora is a mobile-first nutrition and workout tracking web app built with React, TypeScript, Vite, Supabase, and Cloudflare Pages. The web app is also available as a progressive web app (PWA). A separate React Native/Expo iOS project is being developed; the native app is **not** the released web build.
+Tanora is a mobile-first nutrition and workout tracking web app built with React, TypeScript, Vite, Supabase, and Cloudflare Pages. The web app is also available as a progressive web app (PWA). 
 
 > **Current release: Beta 2.1 (November 2026).** The Beta 2.1 feature and unified-interface update was merged into `main` in [PR #4](https://github.com/saiattinti/tanora/pull/4) (merge commit `2267f847`). The project owner reported the Cloudflare deployment at [tanora-1qa.pages.dev](https://tanora-1qa.pages.dev/) running. Local ESLint and production build passed; this is not a claim that automated CI, iPhone regression tests, live cloud synchronization, and all account-security policies have been independently verified.
 
