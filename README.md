@@ -1,10 +1,10 @@
 # Tanora
 
-**[🌐 Open Tanora (Live App)](https://tanora.pages.dev)**
+**[🌐 Open Tanora (Live App)](https://tanora-1qa.pages.dev/)**
 
 Tanora is a mobile-first nutrition and workout tracking web app built with React, TypeScript, Vite, Supabase, and Cloudflare Pages. The web app is also available as a progressive web app (PWA). A separate React Native/Expo iOS project is being developed; the native app is **not** the released web build.
 
-> **Current release: Beta 2.1 (November 2026).** The Beta 2.1 feature and unified-interface update was merged into `main` in [PR #4](https://github.com/saiattinti/tanora/pull/4) (merge commit `2267f847`). The project owner reported the Cloudflare deployment at [tanora.pages.dev](https://tanora.pages.dev) running. Local ESLint and production build passed; this is not a claim that automated CI, iPhone regression tests, live cloud synchronization, and all account-security policies have been independently verified.
+> **Current release: Beta 2.1 (November 2026).** The Beta 2.1 feature and unified-interface update was merged into `main` in [PR #4](https://github.com/saiattinti/tanora/pull/4) (merge commit `2267f847`). The project owner reported the Cloudflare deployment at [tanora-1qa.pages.dev](https://tanora-1qa.pages.dev/) running. Local ESLint and production build passed; this is not a claim that automated CI, iPhone regression tests, live cloud synchronization, and all account-security policies have been independently verified.
 
 ## Current features
 
@@ -66,7 +66,7 @@ Open `http://localhost:8788`. The `dev:api` script serves the existing `dist` bu
 ## Deployment and database
 
 - **Source:** `main`; latest Beta 2.1 feature merge [PR #4](https://github.com/saiattinti/tanora/pull/4).
-- **Public URL reported by owner:** https://tanora.pages.dev
+- **Public URL reported by owner:** https://tanora-1qa.pages.dev/
 - **Cloudflare direct deployment (after building and confirming the Pages project):** `npx wrangler pages deploy dist --project-name=tanora --branch=main`. Confirm the actual Cloudflare project, environment variables and Functions configuration before deploying.
 - **Supabase workout migration:** `supabase/migrations/20261123_workout_data.sql` creates user-scoped `workout_data`.
 - **Supabase 2.1 convenience migration:** `supabase/migrations/20261124_nutrition_convenience.sql` adds `food_entries.eaten_at` and user-scoped `saved_meals` and `saved_recipes`. The owner verified that both tables and the column exist. Table existence alone does not verify RLS policies/grants or successful end-to-end cloud writes.
